@@ -1,0 +1,100 @@
+/*
+
+Színek
+---------------------------
+Háttér: #131314
+Pop-up háttér: #181818
+Gomb háttér: #004a77
+Gomb kontraszt: #c2e7ff
+Szöveg: #ffffff
+Űrlap háttér: #222326
+Kitöltő: #babdbb
+
+*/
+
+body {
+    background-color: #131314;
+}
+
+/* A password_kep beállításai */
+.filter-feher {
+	filter: brightness(0) saturate(100%) invert(89%) sepia(4%) saturate(6933%) hue-rotate(181deg) brightness(109%) contrast(104%);
+}
+#password {
+    padding-inline-end: 4rem !important;
+}
+
+/* Beviteli mezők testreszabása */
+input {
+    font-family: "Rubik", sans-serif;
+    font-optical-sizing: auto;
+    font-weight: 300;
+}
+
+/* A tovabb_gomb testreszabása*/
+#tovabb_gomb {
+    background-color: #004a77;
+    color: #c2e7ff;
+    font-family: "Rubik", sans-serif;
+    font-optical-sizing: auto;
+    font-weight: 500;
+    font-style: normal;
+    border-radius: 25px;
+    transition: background-color 1s;
+}
+#tovabb_gomb:hover {
+    background-color: #c2e7ff;
+    color: #004a77;
+    transition: background-color 1s;
+}
+
+/* A "Bejelentkezés" felirat testreszabása */
+#cim {
+    font-family: "Rubik", sans-serif;
+    font-weight: 600;
+    font-style: normal;
+    color: white;
+}
+
+/* Pop-up bejelentkezési ablak beállítása */
+#login{
+    text-align: center;
+    margin: auto;
+    max-width: 500px;
+    transform: translateY(-20%);
+    border-radius: 15px;
+    background-color: #181818;
+}
+@media (max-width: 576px) {
+    #login {
+        max-width: 100% !important;
+        width: 100%;
+        height: 100vh;
+        transform: none;
+        border-radius: 0;
+    }
+}
+
+/* Bejelentkezéi űrlap színei */
+.form-control{
+    color: white;
+    background-color: #222326;
+    border: none;
+    border-radius: 25px;
+    font-weight: 400;
+    /*box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.25);*/
+}
+.form-control::placeholder{
+    color: #babdbb;
+    font-weight: 400;
+}
+.form-control:focus {
+    border: 1px;
+    box-shadow: 0 0 0 0.1rem #c2e7ff;
+    font-weight: 400;
+    color: #c2e7ff;
+    background-color: #222326;
+}
+.form-control:focus::placeholder {
+    color: #babdbb;
+}

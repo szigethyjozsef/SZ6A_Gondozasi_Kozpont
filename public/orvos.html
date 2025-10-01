@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Fix kereső + Sidebar + Hamburger</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <style>
+    body {
+      margin: 0;
+      background-color: #121212;
+      color: white;
+      overflow: hidden;
+    }
+
+    /* === Sidebar === */
+    .sidebar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 220px;
+      height: 100vh;
+      background-color: #1f1f1f;
+      padding: 20px;
+      overflow-y: auto;
+      z-index: 1040;
+    }
+
+    .sidebar .nav-link {
+      color: #ccc;
+      margin-bottom: 10px;
+    }
+
+    .sidebar .nav-link:hover {
+      background-color: #333;
+      color: white;
+    }
+
+    /* === Mobile Sidebar === */
+    @media (max-width: 767.98px) {
+      .sidebar {
+        transform: translateX(-100%);
+        transition: transform 0.3s ease;
+      }
+
+      .sidebar.show {
+        transform: translateX(0);
+      }
+
+      .overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        z-index: 1030;
+      }
+
+      .overlay.show {
+        display: block;
+      }
+
+      .content-container {
+        margin-left: 0 !important;
+      }
+    }
+
+    /* === Content Layout === */
+    .content-container {
+      margin-left: 220px;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .search-bar {
+      background-color: #1e1e1e;
+      padding: 15px;
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+
+      /* középre a keresősáv egész konténere */
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    /* form maga: a hamburger + kereső sorban */
+    .search-bar form {
+      display: flex !important;
+      align-items: center;
+      gap: 10px;
+      width: 100%;
+      max-width: 600px; /* max szélesség a keresősávnak */
+    }
+
+    .search-bar input {
+      background-color: #2b2b2b;
+      border: none;
+      color: white;
+      flex-grow: 1;
+    }
+
+    .search-bar input::placeholder {
+      color: #aaa;
+    }
+
+    .scrollable-content {
+      overflow-y: auto;
+      flex-grow: 1;
+      padding: 30px;
+    }
+
+    /* Hamburger gomb csak mobilon */
+    .hamburger-btn {
+      display: none;
+    }
+
+    @media (max-width: 767.98px) {
+      .hamburger-btn {
+        display: inline-block;
+        background: none;
+        border: none;
+        margin-left: 0; /* nincs bal margin */
+        margin-right: 5px; /* kicsit jobbra tolva, hogy ne érjen össze a keresővel */
+        padding: 0;
+        cursor: pointer;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 🔳 Overlay for mobile -->
+  <div class="overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+
+  <!-- 🟫 Sidebar -->
+  <div class="sidebar bg-dark text-white p-3" id="sidebar">
+    <h4>Menü</h4>
+    <a href="#" class="nav-link">Főoldal</a>
+    <a href="#" class="nav-link">Betűtípusok</a>
+    <a href="#" class="nav-link">Beállítások</a>
+    <a href="#" class="nav-link">Kapcsolat</a>
+  </div>
+
+  <!-- 🟩 Main content -->
+  <div class="content-container">
+    <!-- 🔍 Search bar + Hamburger (mobile only) -->
+    <div class="search-bar">
+      <form>
+        <!-- Hamburger ikon csak mobilon -->
+        <button type="button" class="hamburger-btn text-white" onclick="toggleSidebar()" aria-label="Menü megnyitása">
+          <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="currentColor" class="bi bi-list" viewBox="0 0 16 16">
+            <path fill-rule="evenodd" d="M2.5 12.5A.5.5 0 0 1 3 12h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5zm0-5A.5.5 0 0 1 3 7h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5zm0-5A.5.5 0 0 1 3 2h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5z"/>
+          </svg>
+        </button>
+
+        <!-- Keresőmező -->
+        <input type="search" class="form-control" placeholder="Keresés...">
+      </form>
+    </div>
+
+    <!-- 📄 Scrollable content -->
+    <div class="scrollable-content">
+      <h2>Betűtípus Lista</h2>
+      <p>Ez itt a görgethető tartalom...</p>
+
+      <div style="height: 1500px;">
+        <p>További tartalom... (Scroll le/fel)</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Script to toggle sidebar -->
+  <script>
+    function toggleSidebar() {
+      document.getElementById('sidebar').classList.toggle('show');
+      document.getElementById('sidebarOverlay').classList.toggle('show');
+    }
+  </script>
+
+  <!-- Bootstrap JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
