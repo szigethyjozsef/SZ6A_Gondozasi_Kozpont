@@ -1,10 +1,7 @@
-# Project Name
-
-### The Catchphrase or Subtitle for your project
-
-<p align="center">
-  <img src="path/to/your/logo.png" alt="Project Logo" width="200">
-</p>
+<center>
+# SZ6/A
+### ZGK kezelői felület
+</center>
 
 <p align="center">
   <img src="https://img.shields.io/badge/release-v0.2.4-blue" alt="Release">
