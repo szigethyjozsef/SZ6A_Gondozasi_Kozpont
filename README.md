@@ -1,7 +1,7 @@
 <div align="center">
 
 # SZ6/A
-### ZGK kezelői felület
+### Zalaegerszegi Gondozási Központ kezelői felület
 
 </div>
 
