@@ -11,11 +11,8 @@
 
 ---
 
-Your project description goes here. Explain what your website does and why it’s useful. 
+Ez a projekt a 2025/26-os tanév folyamán készült a tanév végi érettségi vizsgaremekeként. A projektben részt vevő diákok: Barabás Gergő, Boncz Ákos, Szigethy József.
 
-There are no strings attached, no premium licenses—just a project built with passion!
+Feladatul azt kaptuk, hogy a Zalaegerszegi Gondozási Központnak készítsünk egy olyan felületet, amelyen különböző munkakörök alapján jogosultságok kiosztásával kezelhetnek az alkalmazottak adatokat. Emellett feladatunk, hogy a gondozottak hozzátartozói is online hozzáférhessenek a gondozottak állapotához.
 
-For further details, please see our [documentation page](#) or join our [community channels](#).
-
-### Want to get started?
-Check out our [downloads page](#) or our [installation guide](#), then see our [quick start guide](#).
+További információkért olvassa el a [documentation page](#) specifikációt.
