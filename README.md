@@ -7,9 +7,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/license-GPL--2.0-orange" alt="License">
-  <img src="https://img.shields.io/badge/release-v1.0.0-blue" alt="Release">
-  <img src="https://img.shields.io/badge/translated-80%25-yellowgreen" alt="Translation">
+  <img src="https://img.shields.io/badge/release-v0.2.4-blue" alt="Release">
 </p>
 
 ---
