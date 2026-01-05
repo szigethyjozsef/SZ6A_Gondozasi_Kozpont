@@ -1,7 +1,9 @@
-<center>
+<div align="center">
+
 # SZ6/A
 ### ZGK kezelői felület
-</center>
+
+</div>
 
 <p align="center">
   <img src="https://img.shields.io/badge/release-v0.2.4-blue" alt="Release">
