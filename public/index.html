@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <!-- Rubik betűtípus -->
+    <link href="https://fonts.googleapis.com/css2?family=Rubik:ital,wght@0,300..900;1,300..900&display=swap" rel="stylesheet">
+
+    <script src="script.js"></script>
+    <title>Zalaegerszegi Időskorúak Gondozóháza</title>
+</head>
+<body>
+    <div id="ablak" class="d-flex vh-100">
+        <div id="login" class="container py-4 col-sm-12">
+            <div class="h3 mb-5 mt-5 sm-4" id="cim">BEJELENTKEZÉS</div>
+            <form>
+                <div class="mx-auto w-lg-auto form-group my-2" style="max-width: 400px;">
+                    <input type="text" id="felhasz" class="form-control py-3 px-4" placeholder="Felhasználónév">
+                </div>
+                <div class="mx-auto my-3" style="max-width: 400px; position: relative;">
+                    <input type="password" id="password" class="form-control py-3 px-4" placeholder="Jelszó">
+                    <button class="btn" type="button" id="password_gomb" onclick="focusField()" style="position: absolute; right: 0; top: 0; bottom: 0; border: none; background: transparent">
+                        <img id="password_kep" class="password_filter px-2" src="kepek/view.svg" alt="Jelszó mutatása/elrejtése" style="height: 60%;">
+                    </button>
+                </div>
+                <div id="figyelmeztet" class="mx-auto my-3 text-danger"></div>
+            </form>
+            <button id="tovabb_gomb" onclick="iHopeLogin()" type="submit" class="btn my-2 py-2 px-4">Tovább</button>
+        </div>
+    </div>
+</body>
+</html>
