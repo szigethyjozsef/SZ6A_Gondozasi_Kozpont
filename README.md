@@ -16,3 +16,5 @@ Ez a projekt a 2025/26-os tanév folyamán készült a tanév végi érettségi 
 Feladatul azt kaptuk, hogy a Zalaegerszegi Gondozási Központnak készítsünk egy olyan felületet, amelyen különböző munkakörök alapján jogosultságok kiosztásával kezelhetnek az alkalmazottak adatokat. Emellett feladatunk, hogy a gondozottak hozzátartozói is online hozzáférhessenek a gondozottak állapotához.
 
 További információkért olvassa el a [részletes specifikációt](https://docs.google.com/document/d/129Z8Vif-hkDRUh7ElyJey7fh6k3asQlaMTaOE5kfik4/edit?tab=t.0).
+
+Aktuális munkafolyamat: https://prod.liveshare.vsengsaas.visualstudio.com/join?048B67CB04B7344F9D7E84D10BA12432A573
