@@ -1,3 +1,4 @@
+
 //-----------------------------------
 //Fix, ez kell
 
@@ -24,7 +25,7 @@ const conn = mysql.createConnection({
 
 
 
-app.use(session({
+const sessionadat = session({
 	secret: 'replace-with-secure-secret',
 	resave: false,
 	saveUninitialized: false,
@@ -34,10 +35,31 @@ app.use(session({
 	  sameSite: "lax",
 	  maxAge: 1000 * 60 * 60  // 1 hour
 	}
-  }));
+  });
   
+  app.use(sessionadat);
+  
+const sesionStore = sessionadat.store;
+const sessions = new Set();
+
+
+function sessionCounter(){
+    const now = Date.now();
+    const maxAge = 1000 * 60 * 60; // 1 hour
+    for (const [sid, ts] of sessions) {
+      if (now - ts > maxAge) sessions.delete(sid);
+    }
+    var dbSzam = sessions.size
+    //console.log(dbSzam);
+    return dbSzam
+  }
+
+
 
 //-----------------------------------
+
+
+
 
 //-------------Bejelentkezéshez-------------
 /*
@@ -79,12 +101,19 @@ app.post('/login',(req, res) => { //BG
 **/
 
 
+
+
+
 app.post('/login',(req, res) => { //BG
+
     const user = req.query.user;
     const passwd = req.query.passwd;
 
     req.session.user = user;
-  
+    
+    console.log("*********************************************");
+    console.log(sessionCounter());
+    
     
     const sql = `SELECT 
                 COUNT(O_ID) AS van,
@@ -115,10 +144,41 @@ app.post('/login',(req, res) => { //BG
             console.log("/logina result: " + results[0]["user"]) 
              
         }
+        if(results[0]["jogosultsag"] == 0){
+            if(sessionCounter() == 0){
+                if(results[0]["van"] == 1){
+                    sessions.add(req.sessionID);
+                }
+                res.set('Content-Type', 'application/json', 'charset=utf-8');
+                res.send(JSON.stringify({ 'db': results[0]["jogosultsag"], 'van': results[0]["van"]}));
+                res.end();
+                
+            }
+            else{
+                res.set('Content-Type', 'application/json', 'charset=utf-8');
+                res.send(JSON.stringify({ 'db': results[0]["jogosultsag"], 'van': 7567}));
+                res.end();
+            }
+        }
+        else{
 		res.set('Content-Type', 'application/json', 'charset=utf-8');
-            res.send(JSON.stringify({ 'db': results[0]["jogosultsag"], 'van': results[0]["van"]}));
-            res.end();
+        res.send(JSON.stringify({ 'db': results[0]["jogosultsag"], 'van': results[0]["van"]}));
+        res.end();
+        }  
     })
+});
+
+app.post('/logout', (req, res) => {
+    const sessionId = req.sessionID;
+    req.session.destroy(err => {
+        if (err) return res.send("Logout error");
+
+        sessions.delete(sessionId);
+        console.log("bejelentkezett user count: ")
+        res.clearCookie('connect.sid');
+        sessionCounter()
+        res.end()
+  });
 });
 
 
@@ -224,26 +284,20 @@ app.post('/kereses', (req, res) => {
     }
 
 
-// Oszlopnevek lekérdezése
-conn.query(
-    'SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = ?',
-    [tab],
-    (err, columns) => {
+conn.query('SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = ?',[tab],(err, columns) => {
         if (err || !columns.length) {
             res.status(500).json({ error: 'Oszlopok lekérdezése sikertelen!' });
             return;
         }
 
-        // Feltételek minden oszlopra külön LIKE
         const likeConditions = columns
             .map(col => `CAST(IFNULL(\`${col.COLUMN_NAME}\`, '') AS CHAR) LIKE ?`)
             .join(' OR ');
            
-        // Feltételekhez szükséges paraméterek annyiszor, ahány oszlop van
         const likeValues = columns.map(() => `%${ert.trim()}%`);
 
         const sql = `SELECT * FROM \`${tab}\` WHERE ${likeConditions}`;
-        // Lefuttatja a lekérdezést
+
         conn.query(sql, likeValues, (err2, results) => {
             if (err2) {
                 res.status(500).json({ error: 'Adatbázis lekérdezési hiba!' });
@@ -441,14 +495,7 @@ app.post('/oszlopnev',(req, res) => { //BG
 
 
 
-
-
-
-
-
-
-
-// ÚJ VÉGPONT: Pácienshez még nem rendelt elemek lekérdezése
+// Pácienshez még nem hozzárendelt elemek lekérdezése
 app.post('/getHozzaadniValo', (req, res) => { // BG
     const tabla = req.query.tabla;
     const pacid = req.query.pacid;
@@ -495,7 +542,47 @@ app.post('/getHozzaadniValo', (req, res) => { // BG
         }
     });
 });
-// ÚJ VÉGPONT: Kiválasztott elemek mentése a kapcsolótáblába (JAVÍTOTT VERZIÓ)
+
+
+//Módosított adatok mentése
+
+app.post('/adatmentes', (req, res) => {
+    const tabla = req.query.tabla;
+    const oszlopok = req.query.oszlopok.split(',');
+    const adatok = req.query.adatok.split(',');
+    const id = req.query.id;
+
+    if (id === "new") {
+        const sql = `INSERT INTO ${tabla} (${oszlopok.join(', ')}) VALUES (?)`;
+        
+        conn.query(sql, [adatok], (err, results) => {
+            handleResponse(res, err, results);
+        });
+    } 
+    else {
+        const setClause = oszlopok.map(col => `${col} = ?`).join(', ');
+        const sql = `UPDATE ${tabla} SET ${setClause} WHERE P_ID = ?`;
+        
+        const queryParams = [...adatok, id];
+
+        conn.query(sql, queryParams, (err, results) => {
+            handleResponse(res, err, results);
+        });
+    }
+});
+
+// Segédfüggvény a válaszhoz, hogy ne ismételjük a kódot
+function handleResponse(res, err, results) {
+    if (err) {
+        console.error(err);
+        return res.status(500).json({ hiba: "Adatbázis hiba" });
+    }
+    console.log("Sikeres művelet");
+    res.json({ tablak: "siker" });
+}
+
+
+// Kiválasztott elemek mentése
 app.post('/saveHozzaadottAdat', (req, res) => { // BG
     const tabla = req.query.tabla;
     const pacid = req.query.pacid;
@@ -533,7 +620,7 @@ app.post('/saveHozzaadottAdat', (req, res) => { // BG
         switch (tabla) {
             case 'Betegsegek':
                 sql = `INSERT INTO Paciens_Betegseg (PACIENS_ID, BETEGSEG_ID, OPERATOR_ID) VALUES ?`;
-                values = ids.map(id => [pacid, id, operatorId]); // Most már 'operatorId' létezik
+                values = ids.map(id => [pacid, id, operatorId]);
                 break;
             case 'Gyogyszerek':
                 sql = `INSERT INTO Paciens_Gyogyszer (PACIENS_ID, Gyogyszer_ID, OPERATOR_ID) VALUES ?`;
@@ -545,7 +632,7 @@ app.post('/saveHozzaadottAdat', (req, res) => { // BG
                 break;
             default:
                 console.log("saveHozzaadottAdat: Érvénytelen tábla név: " + tabla);
-                res.status(400).json({ success: false, error: 'Érvénytelen tábla név!' });
+                res.json({ success: false, error: 'Érvénytelen tábla név!' });
                 return;
         }
 
@@ -555,7 +642,7 @@ app.post('/saveHozzaadottAdat', (req, res) => { // BG
             if (errInsert) {
                 console.log("/saveHozzaadottAdat hiba (INSERT)");
                 console.log(errInsert); 
-                res.status(500).json({ success: false, error: 'Adatbázis hiba mentéskor.', details: errInsert.sqlMessage });
+                res.json({ success: false, error: 'Adatbázis hiba mentéskor.', details: errInsert.sqlMessage });
             } else {
                 res.set('Content-Type', 'application/json', 'charset=utf-8');
                 res.send(JSON.stringify({ success: true, 'affectedRows': results.affectedRows }));
@@ -570,7 +657,7 @@ app.post('/saveHozzaadottAdat', (req, res) => { // BG
 
 
 
-// 1. VÉGPONT: Törölhető (már hozzárendelt) elemek lekérdezése
+//Törölhető (már hozzárendelt) elemek lekérdezése
 app.post('/getTorolniValo', (req, res) => {
     const tabla = req.query.tabla;
     const pacid = req.query.pacid;
@@ -612,7 +699,7 @@ app.post('/getTorolniValo', (req, res) => {
     });
 });
 
-// 2. VÉGPONT: Kapcsolatok törlése
+// Kapcsolatok törlése
 app.post('/deletePaciensAdat', (req, res) => {
     const tabla = req.query.tabla;
     const pacid = req.query.pacid;
@@ -620,7 +707,7 @@ app.post('/deletePaciensAdat', (req, res) => {
 
 
     if (!req.session.user) {
-        return res.status(401).json({ success: false, error: 'Nincs bejelentkezve.' });
+        return res.json({ success: false, error: 'Nincs bejelentkezve.' });
     }
 
     if (!idsString || !pacid || !tabla) {
