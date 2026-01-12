@@ -442,8 +442,9 @@ function pacMod(cuccos){
         }
     }
     html += `</table>`
-    html += `<button type="button" onclick="P_adat_mentes()" class="btn btn_letrehoz_szin btn_card">Mentés</button></div>`;
-
+    html += `<button type="button" onclick="adathozzaad(${cuccos})" class="btn btn_letrehoz_szin btn_card">Mentés</button></div>`;
+    
+   
     /******************************************* */
     var tombos = [];
 
@@ -538,8 +539,13 @@ function adathozzaad(allapot){
 		}
 	}
     
-    //var be = ajax_post(`/adatmentes?id=${allapot}&tabla=${tablaNevesKell}&oszlopok=${oszlopok.substring(0, oszlopok.length-1)}&adatok=${olszlopadat.substring(0, olszlopadat.length-1)}`, 1);
+    var be = ajax_post(`/adatmentes?id=${allapot}&tabla=${tablaNevesKell}&oszlopok=${oszlopok.substring(0, oszlopok.length-1)}&adatok=${olszlopadat.substring(0, olszlopadat.length-1)}`, 1);
     
+    //console.log(Object.values(be)[1].sqlMessage);
+    if(Object.values(be)[1].sqlMessage.includes("Incorrect date value:")){
+        Something_very_bad_happened();
+    }
+
 	console.log(oszlopok.substring(0, oszlopok.length-1));
 	console.log(olszlopadat.substring(0, olszlopadat.length-1));
 }
@@ -547,7 +553,8 @@ function adathozzaad(allapot){
 // páciens adat mentése
 
 function P_adat_hozzaad(tableNeve, pacid){
-	
+
+
     var be = ajax_post(`/getHozzaadniValo?tabla=${tableNeve}&pacid=${pacid}`, 1); 
     
     document.getElementById("idebeteszt").innerHTML = "";
@@ -599,6 +606,11 @@ function P_adat_hozzaad(tableNeve, pacid){
                `;
 
     document.getElementById("idebeteszt").innerHTML = html;
+
+    const duci = document.getElementById("adatDialog");
+    duci.classList.remove('modal-md');
+    duci.classList.add('modal-lg');
+
 }
 
 
@@ -789,3 +801,10 @@ function manualisModalTakaritas() {
 }
 
 
+function Something_very_bad_happened() {
+  var x = document.getElementById("snackbar");
+  const most = new Date().toISOString().split('T')[0];
+  x.className = "show";
+  x.innerHTML = `Helytelen daátum formátum!!! (Helyes: ${most})`;
+  setTimeout(function(){ x.className = x.className.replace("show", ""); }, 3000);
+}

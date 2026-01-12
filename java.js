@@ -556,26 +556,33 @@ app.post('/adatmentes', (req, res) => {
         const sql = `INSERT INTO ${tabla} (${oszlopok.join(', ')}) VALUES (?)`;
         
         conn.query(sql, [adatok], (err, results) => {
-            handleResponse(res, err, results);
+            valasz(res, err, results);
         });
     } 
     else {
-        const setClause = oszlopok.map(col => `${col} = ?`).join(', ');
-        const sql = `UPDATE ${tabla} SET ${setClause} WHERE P_ID = ?`;
-        
-        const queryParams = [...adatok, id];
+        conn.query(`SHOW COLUMNS FROM ${tabla}`, (err, cols) => {
+            if (err) {
+                console.error(err);
+                return res.json({ hiba: "Adatbázis hiba" });
+            }
+            const firstCol = cols[0].Field;
+            const setClause = oszlopok.map(col => `${col} = ?`).join(', ');
+            const sql = `UPDATE ${tabla} SET ${setClause} WHERE ${firstCol} = ?`;
+            
+            const queryParams = [...adatok, id];
 
-        conn.query(sql, queryParams, (err, results) => {
-            handleResponse(res, err, results);
+            conn.query(sql, queryParams, (err, results) => {
+                valasz(res, err, results);
+            });
         });
     }
 });
 
-// Segédfüggvény a válaszhoz, hogy ne ismételjük a kódot
-function handleResponse(res, err, results) {
+// Segédfüggvény a válaszhoz
+function valasz(res, err, results) {
     if (err) {
         console.error(err);
-        return res.status(500).json({ hiba: "Adatbázis hiba" });
+        return res.json({ hiba: "Adatbázis hiba", error: err });
     }
     console.log("Sikeres művelet");
     res.json({ tablak: "siker" });
