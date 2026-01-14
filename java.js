@@ -304,10 +304,14 @@ conn.query('SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME 
                 return;
             }
             if (!results.length) {
-                res.json({ tablak: ['üres'] });
+                res.set('Content-Type', 'application/json', 'charset=utf-8');
+                res.send(JSON.stringify({ tablak: ['üres'] }));
+                res.end();
                 
             } else {
-                res.json({ tablak: results });
+                res.set('Content-Type', 'application/json', 'charset=utf-8');
+                res.send(JSON.stringify({ 'tablak': results}));
+                res.end();
                 console.log(results);
             }
         });
@@ -578,15 +582,45 @@ app.post('/adatmentes', (req, res) => {
     }
 });
 
+
+//adat törlése
+app.post('/adattorlese', (req, res) => {
+    const tabla = req.query.tabla;
+    const id = req.query.id;
+    
+     conn.query(`SHOW COLUMNS FROM ${tabla}`, (err, cols) => {
+            if (err) {
+                console.error(err);
+                return res.json({ hiba: "Adatbázis hiba" });
+            }
+            const firstCol = cols[0].Field;
+            const sql = `DELETE FROM ${tabla} WHERE ${firstCol} = ?;`;
+            conn.query(sql, [id], (err, cols) => {
+            if (err) {
+                console.error(err);
+                return res.json({ hiba: "Adatbázis hiba" });
+            }
+            res.set('Content-Type', 'application/json', 'charset=utf-8');
+            res.send(JSON.stringify({ tablak: "siker" }));
+            res.end();
+    }
+    );
+        });
+    
+});
+
+
 // Segédfüggvény a válaszhoz
 function valasz(res, err, results) {
     if (err) {
         console.error(err);
-        return res.json({ hiba: "Adatbázis hiba", error: err });
+        return res.json({ hiba: "Adatbázis hiba", error: err }); res.end();
     }
     console.log("Sikeres művelet");
-    res.json({ tablak: "siker" });
+    res.json({ tablak: "siker", error: "" });
+    res.end();
 }
+
 
 
 // Kiválasztott elemek mentése
@@ -606,7 +640,7 @@ app.post('/saveHozzaadottAdat', (req, res) => { // BG
                          .filter(id => !isNaN(id));
     
     if (ids.length === 0) {
-        return res.json({ success: false, error: 'Érvénytelen vagy üres ID lista.' });
+        return res.json({ success: false, error: 'Érvénytelen vagy üres ID lista.' }); res.end();
     }
 
     conn.query('SELECT O_ID FROM Operatorok WHERE FELHASZNALONEV = ?', [felhasznalonev], (errOp, opResults) => {
@@ -652,7 +686,7 @@ app.post('/saveHozzaadottAdat', (req, res) => { // BG
                 res.json({ success: false, error: 'Adatbázis hiba mentéskor.', details: errInsert.sqlMessage });
             } else {
                 res.set('Content-Type', 'application/json', 'charset=utf-8');
-                res.send(JSON.stringify({ success: true, 'affectedRows': results.affectedRows }));
+                res.send(JSON.stringify({ success: true, 'affectedRows': results.affectedRows, error : "null" }));
                 res.end();
             }
         });

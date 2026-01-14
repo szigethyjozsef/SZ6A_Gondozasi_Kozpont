@@ -207,7 +207,7 @@ function loadPage(element, tablaNeve) {
 	
 	var mezok = Object.keys(be.tablak[0]);
 	
-	tablaMegcsinal(mezok, be)
+	tablaMegcsinal( be)
 
 	// Aktív osztály
 	document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
@@ -227,7 +227,7 @@ function loadPage(element, tablaNeve) {
 
 
 
-function tablaMegcsinal(mezok, be){
+function tablaMegcsinal( be){
 	document.querySelector('.tablakIdeTolt').innerHTML ="";	
 	var ideges = (Object.values(be.tablak[0])[0] +Object.values(be.tablak[0])[1] +Object.values(be.tablak[0])[2] +Object.values(be.tablak[0])[3]).toString();
 
@@ -267,7 +267,7 @@ function tablaMegcsinal(mezok, be){
 			}
 			html += `</tr></thead><tbody>`;
 			for (var sor of be.tablak) {
-				html += `<tr data-bs-toggle="modal" data-bs-target="#adatad" onclick='pupUPletrehoz(${JSON.stringify(sor)})'>`;
+				html += `<tr onclick='pupUPletrehoz(${JSON.stringify(sor)})'>`;
 				for (var ertek of Object.values(sor)) {
 					if(typeof ertek === "string" && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(ertek))
 					{
@@ -309,15 +309,15 @@ async function keres() { //  BG
 		const be = await ajax_post(`/kereses?tabla=${tablaNevesKell}&ertek=${kereso.value}`, 1);
 		if (be.tablak && be.tablak[0]) {
 			var mezok = Object.keys(be.tablak[0]);
-			tablaMegcsinal(mezok, be);
+			tablaMegcsinal( be);
 		}
 		else {
-			tablaMegcsinal([], be);
+			tablaMegcsinal( be);
 		}
 	}
 	catch (err) {
 		console.error('Hiba történt:', err);
-		tablaMegcsinal([], {});
+		tablaMegcsinal( {});
 	}
 }
 
@@ -386,8 +386,8 @@ function pacKattBetolt(be, oszlopok, tombos, pacid) {
 
     html += `</tbody></table>
              <div id="gombsor">
-                <button type="button" data-bs-toggle="modal" data-bs-target="#adatad" onclick="P_adat_hozzaad('${pluralTableNeve}', ${pacid})" class="btn btn_letrehoz_szin btn_card">Adat hozzáadása</button>
-                <button type="button" data-bs-toggle="modal" data-bs-target="#adatad" onclick="P_adat_torlese('${pluralTableNeve}', ${pacid})" class="btn btn_torles_szin btn_card">Adat törlés</button>
+                <button type="button" onclick="P_adat_hozzaad('${pluralTableNeve}', ${pacid})" class="btn blue_btn btn_card">Adat hozzáadása</button>
+                <button type="button" onclick="P_adat_torlese('${pluralTableNeve}', ${pacid})" class="btn red_btn btn_card">Adat törlés</button>
              </div>
              `;
     return html;
@@ -442,14 +442,14 @@ function pacMod(cuccos){
         }
     }
     html += `</table>`
-    html += `<button type="button" onclick="adathozzaad(${cuccos})" class="btn btn_letrehoz_szin btn_card">Mentés</button></div>`;
+    html += `<button type="button" onclick="adathozzaad(${cuccos})" class="btn blue_btn btn_card">Mentés</button></div>`;
     
    
     /******************************************* */
     var tombos = [];
 
     be = ajax_post(`/pacmod2?pacid=${cuccos}`, 1);
-    html += `<div class="col-3 card pac"> <h3 class="title_card">Betegsegek</h3>`
+    html += `<div class="col-3 card pac"> <h3 class="kartya_cim">Betegsegek</h3>`
     oszlopok = ajax_post(`/oszlopnev?tabla=Betegsegek`, 1);
     tombos = [1, 2]
 
@@ -459,7 +459,7 @@ function pacMod(cuccos){
     /********************************************* */
     
     be = ajax_post(`/pacmod3?pacid=${cuccos}`, 1);
-    html += `<div class="col-3 card pac"> <h3 class="title_card">Gyogyszerek</h3>`
+    html += `<div class="col-3 card pac"> <h3 class="kartya_cim">Gyogyszerek</h3>`
     oszlopok = ajax_post(`/oszlopnev?tabla=Gyogyszerek`, 1);
     tombos = [1, 3]
     html += pacKattBetolt(be, oszlopok, tombos, cuccos); 
@@ -467,7 +467,7 @@ function pacMod(cuccos){
     /****************************************** */
 
     be = ajax_post(`/pacmod4?pacid=${cuccos}`, 1);
-    html += `<div class="col-3 card pac"> <h3 class="title_card">Rokonok</h3>`
+    html += `<div class="col-3 card pac"> <h3 class="kartya_cim">Rokonok</h3>`
     oszlopok = ajax_post(`/oszlopnev?tabla=Rokonok`, 1);
     tombos = [1, 3]
 
@@ -483,6 +483,8 @@ function pacMod(cuccos){
 /*────────────────────────────────── POP-UP ABLAK LÉTREHOZÁSA ──────────────────────────────────*/
 
 function pupUPletrehoz(cuccos) { // BA
+    $('#adatad').modal('show');
+    
 	var be = ajax_post(`/oszlopnev?tabla=${tablaNevesKell}`, 1); 
 	document.getElementById("idebeteszt").innerHTML = "";
 	var html = `<table id="datok">`
@@ -504,10 +506,10 @@ function pupUPletrehoz(cuccos) { // BA
   	document.getElementById("idebeteszt").innerHTML += html;
   	var vege = "";
 
-  	if (cuccos != "gomb") vege +=  `<button type="button" onclick="adathozzaad('${Object.values(cuccos)[0]}')" class="btn btn_letrehoz_szin btn_letrehozablak">Mentés</button>
-                                    <button type="button" class="btn btn_torles_szin btn_letrehozablak">Törlés</button>`;
+  	if (cuccos != "gomb") vege +=  `<button type="button" onclick="adathozzaad('${Object.values(cuccos)[0]}')" class="btn blue_btn btn_letrehozablak">Mentés</button>
+                                    <button type="button" onclick="adat_torlese('${Object.values(cuccos)[0]}')" class="btn red_btn btn_letrehozablak">Törlés</button>`;
                                   
-  	else vege += `<button type="button" onclick="adathozzaad('new')" class="btn btn_letrehoz_szin btn_letrehozablak">Mentés</button>`;
+  	else vege += `<button type="button" onclick="adathozzaad('new')" class="btn blue_btn btn_letrehozablak">Mentés</button>`;
 
   	document.getElementById("idebeteszt").innerHTML += vege;
 }
@@ -533,6 +535,9 @@ function adathozzaad(allapot){
 		
 		const input = sor.cells[1].querySelector("input");
 		if (input) {
+            if (input.value == ""){
+                Something_very_bad_happened();
+            }
 			olszlopadat += input.value + ",";
 		} else {
 			olszlopadat += ",";
@@ -541,19 +546,43 @@ function adathozzaad(allapot){
     
     var be = ajax_post(`/adatmentes?id=${allapot}&tabla=${tablaNevesKell}&oszlopok=${oszlopok.substring(0, oszlopok.length-1)}&adatok=${olszlopadat.substring(0, olszlopadat.length-1)}`, 1);
     
-    //console.log(Object.values(be)[1].sqlMessage);
-    if(Object.values(be)[1].sqlMessage.includes("Incorrect date value:")){
+    console.log(Object.values(be)[1].error);
+    if(Object.values(be)[1].error != ""){
         Something_very_bad_happened();
     }
 
 	console.log(oszlopok.substring(0, oszlopok.length-1));
 	console.log(olszlopadat.substring(0, olszlopadat.length-1));
+
+    
+    var beb = ajax_post(`/adatlop?tabla=${tablaNevesKell}`, 1); 
+     if (Object.values(be)[0] == "siker") {
+            $('#adatad').modal('hide');
+            tablaMegcsinal( beb);
+        } 
+
+    
+    
+   
+	
+}
+
+
+function adat_torlese(id){
+    console.log(id);
+    var be = ajax_post(`/adattorlese?id=${id}&tabla=${tablaNevesKell}`, 1);
+
+    var beb = ajax_post(`/adatlop?tabla=${tablaNevesKell}`, 1); 
+    if(Object.values(be)[0] == "siker"){
+       $('#adatad').modal('hide');
+       tablaMegcsinal( beb);
+    }
 }
 
 // páciens adat mentése
 
 function P_adat_hozzaad(tableNeve, pacid){
-
+    $('#adatad').modal('show');
 
     var be = ajax_post(`/getHozzaadniValo?tabla=${tableNeve}&pacid=${pacid}`, 1); 
     
@@ -584,8 +613,8 @@ function P_adat_hozzaad(tableNeve, pacid){
 
                     <!-- Gombok a mozgatáshoz -->
                     <div class="d-flex flex-column" style="gap: 10px;">
-                        <button type="button" class="btn btn-secondary" onclick="moveOptions('available_list', 'selected_list')" title="Hozzáad">&gt;&gt;</button>
-                        <button type="button" class="btn btn-secondary" onclick="moveOptions('selected_list', 'available_list')" title="Eltávolít">&lt;&lt;</button>
+                        <button type="button" class="btn blue_btn" onclick="moveOptions('available_list', 'selected_list')" title="Hozzáad">&gt;&gt;</button>
+                        <button type="button" class="btn blue_btn" onclick="moveOptions('selected_list', 'available_list')" title="Eltávolít">&lt;&lt;</button>
                     </div>
 
                     <!-- 2. Listadoboz: Hozzáadni kívánt elemek -->
@@ -601,12 +630,13 @@ function P_adat_hozzaad(tableNeve, pacid){
                 <div id="modal_error_uzenet" class="mt-2"></div>
                 <!-- Mentés Gomb -->
                 <div class="mt-3">
-                    <button id="modalnakell" type="button" onclick="P_adat_mentes_dual('${tableNeve}', ${pacid})" class="btn btn_letrehoz_szin">Kiválasztottak hozzáadása</button>
+                    <button type="button" onclick="P_adat_mentes_dual('${tableNeve}', ${pacid})" class="btn blue_btn modal_btn">Kiválasztottak hozzáadása</button>
                 </div>
                `;
 
     document.getElementById("idebeteszt").innerHTML = html;
-
+    
+    
     const duci = document.getElementById("adatDialog");
     duci.classList.remove('modal-md');
     duci.classList.add('modal-lg');
@@ -651,7 +681,7 @@ function P_adat_torlese(tableNeve, pacid) {
                 <div id="modal_error_uzenet" class="mt-2"></div>
 
                 <div class="mt-3">
-                    <button  type="button" onclick="P_adat_torlese_vegrahajt('${tableNeve}', ${pacid})"  class="btn btn-danger">Kijelöltek törlése</button>
+                    <button  type="button" onclick="P_adat_torlese_vegrahajt('${tableNeve}', ${pacid})"  class="btn red_btn modal_btn">Kijelöltek törlése</button>
                 </div>`;
 
     document.getElementById("idebeteszt").innerHTML = html;
@@ -664,6 +694,8 @@ function P_adat_torlese(tableNeve, pacid) {
 
 
 function P_adat_torlese_vegrahajt(tableNeve, pacid) {
+    $('#adatad').modal('show');
+
     var select = document.getElementById('delete_list');
     var selectedIds = [];
     
@@ -685,23 +717,13 @@ function P_adat_torlese_vegrahajt(tableNeve, pacid) {
         var be = ajax_post(`/deletePaciensAdat?tabla=${tableNeve}&pacid=${pacid}&ids=${idsString}`, 1);
 
         if (be.success) {
-            var modalEl = document.getElementById('adatad');
-            var modalInstance = bootstrap.Modal.getInstance(modalEl);
-            
-            if (modalInstance) {
-                modalEl.addEventListener('hidden.bs.modal', function () {
-                    
-                    pacMod(pacid);
-                }, { once: true });
-                modalInstance.hide();
-            } else {
-                pacMod(pacid);
-            }
+           $('#adatad').modal('hide');
+            pacMod(pacid);
         } else {
             errorDiv.className = "mx-auto my-3 text-danger";
             errorDiv.textContent = be.error || "Hiba történt a törlés során.";
         }
-        manualisModalTakaritas();
+        
     } 
     else {
         
@@ -755,30 +777,14 @@ function P_adat_mentes_dual(tableNeve, pacid) {
         var be = ajax_post(`/saveHozzaadottAdat?tabla=${tableNeve}&pacid=${pacid}&ids=${idsString}`, 1);
 
         if (be.success) {
-
-            var modalEl = document.getElementById('adatad');
-            var modalInstance = bootstrap.Modal.getInstance(modalEl);
-            
-            if (modalInstance) {
-                
-
-                modalEl.addEventListener('hidden.bs.modal', function () {
-                   
-                    pacMod(pacid); 
-                }, { once: true });
-
-
-                modalInstance.hide();
-            } else {
-
-                pacMod(pacid);
-            }
+            $('#adatad').modal('hide');
+            pacMod(pacid);
 
         } else {
             errorDiv.className = "mx-auto my-3 text-danger";
             errorDiv.textContent = be.error || "Ismeretlen hiba történt a mentés során.";
         }
-        manualisModalTakaritas();
+        
     }
 
     if(document.getElementById("selected_list").length < 1){
@@ -788,23 +794,11 @@ function P_adat_mentes_dual(tableNeve, pacid) {
     
 }
 
-function manualisModalTakaritas() {
-    // 1. A .modal-backdrop elemek eltávolítása
-    const backdrops = document.querySelectorAll('.modal-backdrop');
-    backdrops.forEach(backdrop => backdrop.remove());
-
-    // 2. A body stílusainak visszaállítása
-    // Ez megszünteti a görgetés tiltását és eltávolítja az esetleges padding-ot (görgetősáv kompenzáció)
-    document.body.classList.remove('modal-open');
-    document.body.style.overflow = '';
-    document.body.style.paddingRight = ''; 
-}
-
 
 function Something_very_bad_happened() {
   var x = document.getElementById("snackbar");
   const most = new Date().toISOString().split('T')[0];
   x.className = "show";
-  x.innerHTML = `Helytelen daátum formátum!!! (Helyes: ${most})`;
+  x.innerHTML = `Helytelen daátum formátum vagy ilyen nincs!!! (Helyes: ${most})`;
   setTimeout(function(){ x.className = x.className.replace("show", ""); }, 3000);
 }

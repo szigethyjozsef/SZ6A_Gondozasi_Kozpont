@@ -30,16 +30,10 @@
     <div class="content-container">
         <!-- Felsőléc és Hamburger menü -->
         <div class="felsolec my-3 mx-4">
-            <!-- Hamburger menü -->
-            <button type="button" id="btn_hamburger" class="hamburger-btn text-white" onclick="toggleSidebar()" aria-label="Menü megnyitása">
-                <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="currentColor" class="bi bi-list" viewBox="0 0 16 16">
-                    <path fill-rule="evenodd" d="M2.5 12.5A.5.5 0 0 1 3 12h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5zm0-5A.5.5 0 0 1 3 7h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5zm0-5A.5.5 0 0 1 3 2h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5z"/>
-                </svg>
-            </button>
             <!-- Kereső -->
             <input id="kereso" type="search" class="form-control" onkeyup="keres()" placeholder="Keresés...">
             <!-- Plusz gomb -->
-            <button type="button" id="btn_plus" class="btn mx-3 btn_letrehoz_szin" data-bs-toggle="modal" data-bs-target="#adatad" onclick="pupUPletrehoz('gomb')">
+            <button type="button" id="btn_plus" class="blue_btn btn mx-3"  onclick="pupUPletrehoz('gomb')">
                 <img id="btn_plus_icon" src="kepek/plusicon.svg" alt="Jelszó mutatása/elrejtése" style="height: 60%;">
             </button>
             <!-- Profil -->
@@ -48,17 +42,21 @@
                 <p class="txt_profil" id="txt_jogosultsag"></p>
             </div>
             <!-- Kijelentkezés gomb -->
-            <button onclick="iHopeLoginOut()" id="btn_logout" class="btn mx-3 btn_torles_szin">
+            <button onclick="iHopeLoginOut()" id="btn_logout" class="red_btn btn mx-3">
                 <img id="btn_logout_icon" src="kepek/logouticon.svg" alt="Jelszó mutatása/elrejtése" style="height: 60%;">
             </button>
             <!-- Mobilos nézet -->
             <div class="mobile">
-                <input id="mobile_kereso" type="search" class="form-control" onkeyup="keres()" placeholder="Keresés...">
-                <button type="button" id="btn_mobile_plus" class="btn btn_letrehoz_szin" data-bs-toggle="modal" data-bs-target="#adatad" onclick="pupUPletrehoz('gomb')">
-                    <img id="btn_plus_icon" src="kepek/plusicon.svg" alt="Jelszó mutatása/elrejtése" style="height: 60%;">
+                <!-- Hamburger menü -->
+                <button type="button" id="btn_hamburger" class="blue_btn btn" onclick="toggleSidebar()" aria-label="Menü megnyitása">
+                    <img id="btn_hamburger_icon" src="kepek/burgericon.svg" alt="Menü" style="height: 60%;">
                 </button>
-                <button id="btn_profile" class="btn btn_torles_szin">
-                    <img id="btn_profile_icon" src="kepek/profileicon.svg" alt="Jelszó mutatása/elrejtése" style="height: 60%;">
+                <input id="mobile_kereso" type="search" class="form-control" onkeyup="keres()" placeholder="Keresés...">
+                <button type="button" id="btn_mobile_plus" class="blue_btn btn"  click="pupUPletrehoz('gomb')">
+                    <img id="btn_plus_icon" src="kepek/plusicon.svg" alt="Adatok hozzáadása" style="height: 60%;">
+                </button>
+                <button id="btn_profile" class="red_btn btn">
+                    <img id="btn_profile_icon" src="kepek/profileicon.svg" alt="Kijelentkezés és profil adatok" style="height: 60%;">
                 </button>
             </div>
         </div>
@@ -68,20 +66,23 @@
     </div>
 
 
-    <!-- Modal ablak létrehozás és szerkesztéshez   -->
+    <div id="snackbar"></div>
+
     
-    <div class="modal fade" id="adatad" tabindex="-1" aria-hidden="true">
-        <div id="adatDialog" class="modal-dialog modal-dialog-centered modal-md modal-dialog-scrollable modal-fullscreen-xl-down">
-            <div class="modal-content">
-                <div id="letrehozAblak">
-                    <button type="button" class="btn-close position-absolute top-0 end-0 m-3  btn-close-white" data-bs-dismiss="modal" aria-label="Bezárás"></button>
-                    <div id="idebeteszt">Some text in the Modal..</div>
-                </div>
-            </div>
+    <div class="modal fade" id="adatad">
+    <div class="modal-dialog modal-dialog-centered modal-md modal-dialog-scrollable modal-fullscreen-xl-down" style="opacity: 0.97;">
+      <div class="modal-content">
+        <div id="letrehozAblak">
+            <button type="button" class="btn-close position-absolute top-0 end-0 m-3  btn-close-white" data-bs-dismiss="modal" aria-label="Bezárás"></button>
+            <div id="idebeteszt">Some text in the Modal..</div> 
         </div>
     </div>
-    
-   <div id="snackbar"></div>
-    
+  </div>
+   
+
+
 </body>
+
+
+
 </html>
