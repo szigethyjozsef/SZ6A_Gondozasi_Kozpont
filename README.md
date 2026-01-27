@@ -17,4 +17,4 @@ Feladatul azt kaptuk, hogy a Zalaegerszegi Gondozási Központnak készítsünk 
 
 További információkért olvassa el a [részletes specifikációt](https://docs.google.com/document/d/129Z8Vif-hkDRUh7ElyJey7fh6k3asQlaMTaOE5kfik4/edit?tab=t.0).
 
-Aktuális munkafolyamat: [Visual Studio Code](https://prod.liveshare.vsengsaas.visualstudio.com/join?CF4CCBAF28533F26D6176C8AE798BC392A29)
+Aktuális munkafolyamat: [Visual Studio Code](https://prod.liveshare.vsengsaas.visualstudio.com/join?135268E1C821AAB58CF33746EAC2D46D52AA)
