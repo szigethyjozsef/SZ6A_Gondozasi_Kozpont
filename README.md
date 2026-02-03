@@ -19,4 +19,4 @@ További információkért olvassa el a [részletes specifikációt](https://doc
 
 Aktuális munkafolyamat: [Visual Studio Code](https://prod.liveshare.vsengsaas.visualstudio.com/join?464612A867A0DD0F93DC4E3F125D351B336B)
 
-Hasznos tartalmak: [Példa specifikáció](https://awu.ac.in/docs/miscellaneous/2022/web_req_spec.pdf), [Példa kezelői kézikönyv](https://belsotudasbazis.szamvitelirendszer.hu/weboldal_doksi_1_0_0.pdf)
+Hasznos tartalmak: [Példa specifikáció](https://awu.ac.in/docs/miscellaneous/2022/web_req_spec.pdf), [Példa kezelői kézikönyv](https://belsotudasbazis.szamvitelirendszer.hu/weboldal_doksi_1_0_0.pdf), [Tesztelési útmutató](https://www.tutorial.hu/weboldal-keszites/weboldal-tesztelesi-eljarasok-teljes-utmutato/)
