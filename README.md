@@ -20,4 +20,5 @@ További információkért olvassa el a [részletes specifikációt](https://doc
 Aktuális munkafolyamat: [Visual Studio Code](https://prod.liveshare.vsengsaas.visualstudio.com/join?464612A867A0DD0F93DC4E3F125D351B336B)
 
 Példa specifikáció: [Link](https://awu.ac.in/docs/miscellaneous/2022/web_req_spec.pdf)
-példa kezelői kézikönyv: [Link](https://belsotudasbazis.szamvitelirendszer.hu/weboldal_doksi_1_0_0.pdf)
+
+Példa kezelői kézikönyv: [Link](https://belsotudasbazis.szamvitelirendszer.hu/weboldal_doksi_1_0_0.pdf)
