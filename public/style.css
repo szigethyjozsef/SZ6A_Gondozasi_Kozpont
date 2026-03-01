@@ -1,19 +1,5 @@
-/*
-
-Színek
----------------------------
-Háttér: #212529
-Pop-up háttér: #181818
-Gomb háttér: #004a77
-Gomb kontraszt: #c2e7ff
-Szöveg: #ffffff
-Űrlap háttér: #222326
-Kitöltő: #babdbb
-
-*/
-
 body {
-    background-color: #212529;
+    background-color: #181818;
 }
 
 /* A jelszó mező beállításai */
@@ -42,7 +28,7 @@ input {
     font-optical-sizing: auto;
     font-weight: 500;
     font-style: normal;
-    border-radius: 25px;
+    border-radius: 15px;
     transition: background-color 1s;
 }
 #tovabb_gomb:hover {
@@ -66,7 +52,7 @@ input {
     max-width: 500px;
     transform: translateY(-20%);
     border-radius: 15px;
-    background-color: #181818;
+    background-color: #1e1f20;
 }
 @media (max-width: 576px) {
     #login {
@@ -80,25 +66,26 @@ input {
 
 /* Bejelentkezéi űrlap színei */
 .form-control{
+    border: 2px solid transparent; 
     color: white;
-    background-color: #222326;
-    border: none;
-    border-radius: 25px;
+    background-color: #2a2c30;
+    border-radius: 20px;
+    transition: all 0.3s ease;
     font-weight: 400;
+    outline: none;
 }
 .form-control::placeholder{
     color: #babdbb;
     font-weight: 400;
 }
 .form-control:focus {
-    border: 1px;
-    box-shadow: 0 0 0 0.1rem #c2e7ff;
+    border: 2px solid #c2e7ff;
+    
     font-weight: 400;
     color: #c2e7ff;
-    background-color: #222326;
+    background-color: #2a2c30;
+    box-shadow: 0 0 5px rgba(194, 231, 255, 0.3);
 }
 .form-control:focus::placeholder {
     color: #babdbb;
 }
-
-

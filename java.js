@@ -1,29 +1,53 @@
-
 //-----------------------------------
-//Fix, ez kell
-
-
 
 const express = require("express");
 const mysql = require("mysql");
 const app = express();
 const session = require('express-session');
 
+const fs = require("fs");
+const path = require("path");
+
+const { jsPDF } = require('jspdf')
+
 app.use(express.static("public"))
+app.use(express.json())
 const port = 9061; 
 
 // MySQL kapcsolat
-const conn = mysql.createConnection({
-    host: "193.227.198.214",
+const conn = mysql.createPool({
+    host: "10.2.0.11", //local: 10.2.0.11 ||||  193.227.198.214
     user: "barabas.gergo",          
     password: "Csany4181",   
-    port: "9406",     
+    port: "3306", //local port: 3306 ||||  9406
     database: "2021SZ_barabas_gergo",
     multipleStatements: true,
     dateStrings: true
 });
 
+/*  //Localllllllllllllllllllllllll
+const conn = mysql.createPool({
+    host: "193.227.198.214", //local: 10.2.0.11 ||||  193.227.198.214
+    user: "barabas.gergo",          
+    password: "Csany4181",   
+    port: "9406", //local port: 3306 ||||  9406
+    database: "2021SZ_barabas_gergo",
+    multipleStatements: true,
+    dateStrings: true
+});
+*/
 
+/*   //SZERoooooooooooooooooooooooo
+const conn = mysql.createPool({
+    host: "10.2.0.11", //local: 10.2.0.11 ||||  193.227.198.214
+    user: "barabas.gergo",          
+    password: "Csany4181",   
+    port: "3306", //local port: 3306 ||||  9406
+    database: "2021SZ_barabas_gergo",
+    multipleStatements: true,
+    dateStrings: true
+});
+*/
 
 const sessionadat = session({
 	secret: 'replace-with-secure-secret',
@@ -54,140 +78,108 @@ function sessionCounter(){
     return dbSzam
   }
 
-
-
-//-----------------------------------
-
-
-
-
 //-------------Bejelentkezéshez-------------
-/*
-app.post('/login',(req, res) => { //BG
-    const user = req.query.user;
-    const passwd = req.query.passwd;
 
-	req.session.user = user;
-  
-    const sql = `SELECT 
-                COUNT(O_ID) AS van,
-                FELHASZNALONEV AS user,
-                JOGOSULTSAG AS jogosultsag
-                FROM Operatorok
-                WHERE FELHASZNALONEV LIKE  "${user}" AND PASSWORD = MD5("${passwd}")
+// Globális változó a legutolsó admin tokenjének
+let activeAdminToken = null;
 
-                UNION
-
-                SELECT 
-                COUNT(R_ID) AS van,
-                FELHASZNALONEV AS user,
-                3 AS jogosultsag
-                FROM Rokonok
-                WHERE FELHASZNALONEV LIKE "${user}" AND PASSWORD = MD5("${passwd}")
-                ORDER BY 1 desc
-                LIMIT 1;`;
-    conn.query(sql, (err, results) => {
-        if(err){
-            console.log(err);
-        } 
-        if(results) {
-            console.log("/logina result: " + results[0]["jogosultsag"])
+const smartAuth = (req, res, next) => {
+    // 1. Ha nincs session, akkor irány a főoldal (kivéve ha háttér-ellenőrzés)
+    if (!req.session || !req.session.bejelentkezve) {
+        if (req.path === '/check-admin-status') {
+            return res.status(401).json({ error: "Nincs bejelentkezve" });
         }
-        res.set('Content-Type', 'application/json', 'charset=utf-8');
-        res.send(JSON.stringify({ 'db': results[0]["jogosultsag"], 'van': results[0]["van"]}));
-        res.end();
-    })
-  });
-**/
+        return res.redirect('/');
+    }
 
+    // 2. HA ADMIN: megnézzük, hogy ő-e a legfrissebb
+    if (req.session.jogosultsag === "admin") {
+        if (req.session.adminToken !== activeAdminToken) {
+            req.session.destroy();
+            return res.status(401).json({ error: "KIDOBVA" });
+        }
+    }
+    next();
+};
 
+// --- ÚTVONALAK ---
 
+// A login-hoz és a statikus fájlokhoz NE tegyél smartAuth-ot!
+app.use(express.static("public"));
 
-
-app.post('/login',(req, res) => { //BG
-
+app.post('/login', (req, res) => {
     const user = req.query.user;
     const passwd = req.query.passwd;
 
-    req.session.user = user;
-    
-    console.log("*********************************************");
-    console.log(sessionCounter());
-    
-    
-    const sql = `SELECT 
-                COUNT(O_ID) AS van,
-                FELHASZNALONEV AS user,
-                JOGOSULTSAG AS jogosultsag
-                FROM Operatorok
-                WHERE FELHASZNALONEV LIKE ? AND PASSWORD = MD5(?)
+    const sql = `SELECT COUNT(O_ID) AS van, JOGOSULTSAG AS jogosultsag 
+                 FROM Operatorok WHERE FELHASZNALONEV LIKE BINARY ? AND PASSWORD = MD5(?)
+                 UNION
+                 SELECT COUNT(R_ID) AS van, "rokon" AS jogosultsag 
+                 FROM Rokonok WHERE FELHASZNALONEV LIKE BINARY ? AND PASSWORD = MD5(?)
+                 ORDER BY 1 DESC LIMIT 1;`;
 
-                UNION
-
-                SELECT 
-                COUNT(R_ID) AS van,
-                FELHASZNALONEV AS user,
-                3 AS jogosultsag
-                FROM Rokonok
-                WHERE FELHASZNALONEV LIKE ? AND PASSWORD = MD5(?)
-                ORDER BY 1 desc
-                LIMIT 1;`; 
-
-  
     conn.query(sql, [user, passwd, user, passwd], (err, results) => {
-        if(err){
-			console.log("login");
-            console.log(err);
-        } 
+        if (err) return res.status(500).end();
 
-        if(results) {
-            console.log("/logina result: " + results[0]["user"]) 
-             
-        }
-        if(results[0]["jogosultsag"] == 0){
-            if(sessionCounter() == 0){
-                if(results[0]["van"] == 1){
-                    sessions.add(req.sessionID);
-                }
-                res.set('Content-Type', 'application/json', 'charset=utf-8');
-                res.send(JSON.stringify({ 'db': results[0]["jogosultsag"], 'van': results[0]["van"]}));
-                res.end();
-                
+        if (results && results[0]["van"] == 1) {
+            const jogosultsag = results[0]["jogosultsag"];
+            req.session.bejelentkezve = true;
+            req.session.user = user;
+            req.session.jogosultsag = jogosultsag;
+
+            if (jogosultsag == "admin") {
+                const newToken = Date.now() + "-" + Math.random();
+                activeAdminToken = newToken;
+                req.session.adminToken = newToken;
             }
-            else{
-                res.set('Content-Type', 'application/json', 'charset=utf-8');
-                res.send(JSON.stringify({ 'db': results[0]["jogosultsag"], 'van': 7567}));
-                res.end();
-            }
+            res.json({ 'db': jogosultsag, 'van': 1 });
+        } else {
+            res.json({ 'db': "nincs", 'van': 0 });
         }
-        else{
-		res.set('Content-Type', 'application/json', 'charset=utf-8');
-        res.send(JSON.stringify({ 'db': results[0]["jogosultsag"], 'van': results[0]["van"]}));
-        res.end();
-        }  
-    })
+    });
+});
+
+app.get('/admin', smartAuth, (req, res) => {
+    res.sendFile(path.join(__dirname, 'private', 'admin.html'));
+});
+
+app.get('/check-admin-status', smartAuth, (req, res) => {
+    res.sendStatus(200);
 });
 
 app.post('/logout', (req, res) => {
-    const sessionId = req.sessionID;
+    // Ha az admin lép ki, töröljük a globális tokent is, hogy más beléphessen
+    if (req.session.jogosultsag === "admin") {
+        activeAdminToken = null;
+    }
     req.session.destroy(err => {
-        if (err) return res.send("Logout error");
-
-        sessions.delete(sessionId);
-        console.log("bejelentkezett user count: ")
         res.clearCookie('connect.sid');
-        sessionCounter()
-        res.end()
-  });
+        res.end();
+    });
 });
 
+app.post('/opadatok', (req, res) =>{
+    const user = req.session.user;
+    const sql = `select O_ID, NEV from Operatorok where FELHASZNALONEV = ?`;
+    conn.query(sql,[user], (err, results) => {
 
+		if (err) {
+			console.log("opadatok");
+			console.log(err);
+		}
+		res.set('Content-Type', 'application/json', 'charset=utf-8');
+		res.send(JSON.stringify({ 'tablak': results }));
+		res.end();
+		});
+});
 
   app.post('/emberadat',(req, res) => { //BG
 	const alma = req.session.user;
-	const sql = `select NEV from Operatorok where FELHASZNALONEV = ?`;
-	console.log(sql);
-	conn.query(sql,[alma], (err, results) => {
+    console.log("emberadat user: " + alma);
+	const sql = `select NEV from Operatorok where FELHASZNALONEV = ?
+                 union
+                 select NEV from Rokonok where FELHASZNALONEV = ?;`;
+	conn.query(sql,[alma, alma], (err, results) => {
 		if (err) {
 			console.log("emberadat");
 			console.log(err);
@@ -214,9 +206,14 @@ app.post('/logout', (req, res) => {
 							ON T1.JOGOSULTSAG = T2.VALUE 
 							AND T2.FIELD = 'Operatorok_JOGOSULTSAG'
 						WHERE
-							T1.FELHASZNALONEV = ?;`;
-		//           console.log(sql);
-		conn.query(sql,[alma], (err, results) => {
+							T1.FELHASZNALONEV = ?
+                        union
+                        SELECT
+                            T1.FELHASZNALONEV AS "Operátor felhasználónév",
+                            "Rokon" AS "Jogosultsági szint"
+                        from Rokonok as T1
+                            where T1.FELHASZNALONEV = ?;`;
+		conn.query(sql,[alma, alma], (err, results) => {
 			if (err) {
 				console.log("eberjog");
 				console.log(err);
@@ -250,8 +247,31 @@ app.post('/logout', (req, res) => {
     })
   });
 
-
 //-----------Táblázatok feltöltése-----------
+
+    app.post('/adatlopRokon', (req, res) => { // BG
+    const tab = req.query.rokonFelh;
+    console.log("asdasd" + tab)
+    let sql = `SELECT Paciensek.* FROM Rokonok
+                INNER JOIN Paciens_Rokon ON Paciens_Rokon.ROKON_ID = Rokonok.R_ID
+                INNER JOIN Paciensek ON Paciens_Rokon.PACIENS_ID = Paciensek.P_ID
+                WHERE FELHASZNALONEV = "${tab}"`; 
+    conn.query(sql, (err, results) => {
+      if (err) {
+		console.log("adatlopRokon");	
+        console.log(err);
+      }
+      res.set('Content-Type', 'application/json; charset=utf-8');
+      if (results && results.length > 0) {
+        res.send(JSON.stringify({ tablak: results }));
+		      console.log(results);
+      } 
+      else {
+        res.send(JSON.stringify({ tablak: ['üres'] }));
+      }
+	  res.end();
+    });
+  });
 
   app.post('/adatlop', (req, res) => { // BG
     const tab = req.query.tabla;
@@ -272,51 +292,89 @@ app.post('/logout', (req, res) => {
 	  res.end();
     });
   });
+
+  app.post('/naplolop', (req, res) => { // BG
+    const tab = req.query.tabla;
+    let sql = `SELECT Naplo.OP_NEV, Naplo.SQLX, Naplo.DATUMIDO
+            FROM Naplo
+            ORDER BY 3;`; 
+    conn.query(sql, (err, results) => {
+      if (err) {
+		console.log("naplolop");	
+        console.log(err);
+      }
+      res.set('Content-Type', 'application/json; charset=utf-8');
+      if (results && results.length > 0) {
+        res.send(JSON.stringify({ tablak: results }));
+		      console.log(results);
+      } 
+      else {
+        res.send(JSON.stringify({ tablak: ['üres'] }));
+      }
+	  res.end();
+    });
+  });
   
+app.post('/naplo_mentes', (req, res) => {
+    const user = req.query.user;
+    const muvelet = req.query.muvelet;
+
+    const sql = `INSERT INTO Naplo (OP_NEV, SQLX) VALUES (?, ?)`;
+
+    conn.query(sql, [user, muvelet], (err, result) => {
+        if (err) {
+            console.log("Hiba a naplózásnál:", err);
+            return res.status(500).json({ statusz: "hiba" });
+        }
+        res.json({ statusz: "siker" });
+    });
+});
+
+
                                 
 //-----------Keresés--------------
 app.post('/kereses', (req, res) => {
     const tab = req.query.tabla;
     const ert = req.query.ertek;
+    const keresettSzoveg = `%${ert.trim()}%`;
+
     if (!/^[a-zA-Z0-9_]+$/.test(tab)) {
-        res.status(400).json({ error: 'Érvénytelen tábla név!' });
-        return;
+        return res.status(400).json({ error: 'Érvénytelen tábla név!' });
     }
 
+    if (tab === "Naplo") {
+        const sql = `
+            SELECT OP_NEV, SQLX, DATUMIDO AS Mikor
+        FROM Naplo
+        WHERE CAST(OP_NEV AS CHAR) LIKE ? 
+           OR CAST(SQLX AS CHAR) LIKE ? 
+           OR CAST(DATUMIDO AS CHAR) LIKE ?
+        ORDER BY DATUMIDO ASC;`;
 
-conn.query('SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = ?',[tab],(err, columns) => {
-        if (err || !columns.length) {
-            res.status(500).json({ error: 'Oszlopok lekérdezése sikertelen!' });
-            return;
-        }
+        const values = [keresettSzoveg, keresettSzoveg, keresettSzoveg];
 
-        const likeConditions = columns
-            .map(col => `CAST(IFNULL(\`${col.COLUMN_NAME}\`, '') AS CHAR) LIKE ?`)
-            .join(' OR ');
-           
-        const likeValues = columns.map(() => `%${ert.trim()}%`);
+        conn.query(sql, values, (err, results) => {
+            if (err) return res.status(500).json({ error: 'Hiba a napló keresésnél!' });
+            return res.json({ tablak: results.length ? results : ['üres'] });
+        });
 
-        const sql = `SELECT * FROM \`${tab}\` WHERE ${likeConditions}`;
+    } else {
+        conn.query('SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = ?', [tab], (err, columns) => {
+            if (err || !columns.length) return res.status(500).json({ error: 'Oszlop hiba!' });
 
-        conn.query(sql, likeValues, (err2, results) => {
-            if (err2) {
-                res.status(500).json({ error: 'Adatbázis lekérdezési hiba!' });
-                return;
-            }
-            if (!results.length) {
-                res.set('Content-Type', 'application/json', 'charset=utf-8');
-                res.send(JSON.stringify({ tablak: ['üres'] }));
-                res.end();
-                
-            } else {
-                res.set('Content-Type', 'application/json', 'charset=utf-8');
-                res.send(JSON.stringify({ 'tablak': results}));
-                res.end();
-                console.log(results);
-            }
+            const likeConditions = columns
+                .map(col => `CAST(\`${tab}\`.\`${col.COLUMN_NAME}\` AS CHAR) LIKE ?`)
+                .join(' OR ');
+            
+            const likeValues = columns.map(() => keresettSzoveg);
+            const sql = `SELECT * FROM \`${tab}\` WHERE ${likeConditions}`;
+
+            conn.query(sql, likeValues, (err2, results) => {
+                if (err2) return res.status(500).json({ error: 'Adatbázis hiba!' });
+                res.json({ tablak: results.length ? results : ['üres'] });
+            });
         });
     }
-);
 });
 
 
@@ -339,8 +397,6 @@ app.post('/oszlopnev',(req, res) => { //BG
     })
   });
 
-
-
   app.post('/mezonevkel', (req, res) => { // BG
     const tab = req.query.tabla;
 	const sql = `SELECT * FROM Config where	FIELD = ?;`;
@@ -358,11 +414,6 @@ app.post('/oszlopnev',(req, res) => { //BG
 	})
   });
 
-
-
-
-
-
   app.post('/pacmod', (req, res) => { // BG
     const id = req.query.pacid;
     const sql = `SELECT * FROM Paciensek WHERE P_ID = ?`;
@@ -378,8 +429,6 @@ app.post('/oszlopnev',(req, res) => { //BG
         res.send(JSON.stringify({ 'tablak': results}));
         res.end();
     })
-
-
 
   });
   
@@ -404,19 +453,37 @@ app.post('/oszlopnev',(req, res) => { //BG
         res.end();
     })
 
-
-
   });
 
-  
+app.post('/adatmodositas', (req, res) => {
+    const gyogyNev = req.query.gyogyszer;
+    const ertek = req.query.ertek;
+    const pacid = req.query.pacid;
+
+    // Ez az SQL megkeresi a gyógyszer ID-ját a neve alapján, 
+    // és csak annál a páciensnél módosítja a leírást a kapcsolótáblában
+    const sql = `
+        UPDATE Paciens_Gyogyszer 
+        SET ADAGOLAS = ? 
+        WHERE PACIENS_ID = ? AND GYOGYSZER_ID = (SELECT G_ID FROM Gyogyszerek WHERE NEV = ? LIMIT 1);
+    `;
+
+    conn.query(sql, [ertek, pacid, gyogyNev], (err, results) => {
+        if(err){
+            console.log(err);
+            return res.status(500).send(err);
+        } 
+        res.json({ 'success': true, 'affectedRows': results.affectedRows });
+    });
+});
+
   app.post('/pacmod3', (req, res) => { // BG
     const id = req.query.pacid;
-    const sql = ` SELECT Gyogyszerek.NEV, CONCAT(Gyogyszerek.MENNYISEG, ' ', Gyogyszerek.MERTEKEGYSEG) AS Mennyiség
-                  FROM 
-                      Paciensek INNER JOIN Paciens_Gyogyszer ON Paciensek.P_ID = Paciens_Gyogyszer.PACIENS_ID
-                      INNER JOIN Gyogyszerek ON Gyogyszerek.GY_ID = Paciens_Gyogyszer.Gyogyszer_ID
-                  WHERE Paciensek.P_ID = ?
-                  ORDER BY 1`;
+    const sql = ` SELECT GY.NEV AS Név, PGY.ADAGOLAS AS Leírás
+                    FROM Paciensek AS P INNER JOIN Paciens_Gyogyszer AS PGY ON P.P_ID = PGY.PACIENS_ID
+                    INNER JOIN Gyogyszerek AS GY ON GY.G_ID = PGY.GYOGYSZER_ID
+                    WHERE P.P_ID = ?
+                    ORDER BY 1;`;
 	  conn.query(sql,[id], (err, results) => {
         if(err){
 			console.log("pacmod3");
@@ -430,10 +497,7 @@ app.post('/oszlopnev',(req, res) => { //BG
         res.end();
     })
 
-
-
   });
-
 
   app.post('/pacmod4', (req, res) => { // BG
     const id = req.query.pacid;
@@ -455,49 +519,7 @@ app.post('/oszlopnev',(req, res) => { //BG
         res.send(JSON.stringify({ 'tablak': results}));
         res.end();
     })
-
-
-
   });
-
-
-
-  /*
-  app.post('/oszlopadatai',(req, res) => { //BG
-    const tab = req.query.tabla;
-    const adat = req.query.sandor;
-    const sql = ` `;
-    conn.query(
-        `SELECT COLUMN_NAME 
-         FROM INFORMATION_SCHEMA.COLUMNS 
-         WHERE TABLE_NAME = 'Rokonok' 
-           AND TABLE_SCHEMA = 'adatbazis_nev' 
-         ORDER BY ORDINAL_POSITION 
-         LIMIT 1`,
-        (err, results) => {
-          if (err) throw err;
-      
-          const oszlop = results[0].COLUMN_NAME;
-      
-          // 2. Lefuttatod a valódi lekérdezést
-          const sql = `SELECT * FROM Rokonok WHERE \`${oszlop}\` = ?`;
-          conn.query(sql, [`${adat}`], (err2, rows) => {
-            if (err2) throw err2;
-            if(results) {
-            
-                console.log(results)
-            }
-            res.set('Content-Type', 'application/json', 'charset=utf-8');
-            res.send(JSON.stringify({ 'tablak': results}));
-            res.end();
-          });
-        }
-      );
- 
-  });
-*/
-
-
 
 // Pácienshez még nem hozzárendelt elemek lekérdezése
 app.post('/getHozzaadniValo', (req, res) => { // BG
@@ -515,8 +537,8 @@ app.post('/getHozzaadniValo', (req, res) => { // BG
                    ORDER BY NEV`;
             break;
         case 'Gyogyszerek':
-            sql = `SELECT GY_ID, NEV FROM Gyogyszerek
-                   WHERE GY_ID NOT IN (
+            sql = `SELECT G_ID, NEV FROM Gyogyszerek
+                   WHERE G_ID NOT IN (
                        SELECT Gyogyszer_ID FROM Paciens_Gyogyszer WHERE PACIENS_ID = ?
                    )
                    ORDER BY NEV`;
@@ -547,41 +569,271 @@ app.post('/getHozzaadniValo', (req, res) => { // BG
     });
 });
 
-
 //Módosított adatok mentése
-
 app.post('/adatmentes', (req, res) => {
     const tabla = req.query.tabla;
     const oszlopok = req.query.oszlopok.split(',');
     const adatok = req.query.adatok.split(',');
     const id = req.query.id;
 
-    if (id === "new") {
-        const sql = `INSERT INTO ${tabla} (${oszlopok.join(', ')}) VALUES (?)`;
-        
-        conn.query(sql, [adatok], (err, results) => {
-            valasz(res, err, results);
-        });
-    } 
-    else {
-        conn.query(`SHOW COLUMNS FROM ${tabla}`, (err, cols) => {
-            if (err) {
-                console.error(err);
-                return res.json({ hiba: "Adatbázis hiba" });
-            }
-            const firstCol = cols[0].Field;
-            const setClause = oszlopok.map(col => `${col} = ?`).join(', ');
-            const sql = `UPDATE ${tabla} SET ${setClause} WHERE ${firstCol} = ?`;
-            
-            const queryParams = [...adatok, id];
+    const BNO_regex = /^[A-Z][0-9]{2}(\.[0-9]+|\-[A-Z][0-9]{1,2})?$/;
+    const Betegseg_nev_regex = /^[A-ZÁÉÍÓÖŐÚÜŰ][^:]{2,59}$/;
+    const Gyogyszer_nev_regex = /^[A-ZÁÉÍÓÖŐÚÜŰ][^:]{2,99}$/; // [^:] = bármi, csak kettőspont ne
+    const Hatoanyag_regex = /^[A-ZÁÉÍÓÖŐÚÜŰ][^:]{2,99}$/;
+    const Mennyiseg_regex = /^[0-9]+([.][0-9]+)?$/;
+    const Nev_regex = /^[A-ZÁÉÍÓÖŐÚÜŰ][a-záéíóöőúüű]*(?:[\s-][A-ZÁÉÍÓÖŐÚÜŰ][a-záéíóöőúüű]*)*$/;
+    const email_regex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    const felhasznalonev_regex = /^[a-zA-ZáéíóöőúüűÁÉÍÓÖŐÚÜŰ]{4,20}$/;
+    const jelszo_regex = /^[a-zA-Z\d.\-]{4,}$/; // Ebben eddig sem volt benne a :
+    const taj_regex = /^(?:\d{9}|\d{3}\s\d{3}\s\d{3})$/;
+    const iranyitoszam_regex = /^[1-9][0-9]{3}$/;
+    const telepules_regex = /^[A-ZÁÉÍÓÖŐÚÜŰ][^:]{2,59}$/; // [^:]-ra cserélve
+    const cim_regex = /^[A-ZÁÉÍÓÖŐÚÜŰ][^:]{4,99}$/;       // [^:]-ra cserélve
+    const datum_regex = /^\d{4}-\d{2}-\d{2}$/; // Ezzel nem foglalkozunk
+    const telefon_regex = /^(?:\+36|06|36)(?:\s|-)?(?:1|20|30|31|50|70|[2-9][2-9])(?:\s|-)?\d{3}(?:\s|-)?\d{3,4}$/;
+    const nyugdij_regex = /^[1-9][0-9]*$/;
+    const most = new Date().toISOString().split('T')[0];
 
-            conn.query(sql, queryParams, (err, results) => {
-                valasz(res, err, results);
-            });
-        });
+    if(tabla == "Betegsegek"){
+        if(!Betegseg_nev_regex.test(adatok[0])){
+            
+            res.json({
+                statusz: "hiba",
+                hiba: "Hibás betegség név formátum! (Nagybetűvel kell kezdődni, legalább 2 karakter)" });
+            res.end();
+        }
+        else if(!BNO_regex.test(adatok[1])){
+            
+            res.json({ 
+                statusz: "hiba",
+                hiba: "Hibás BNO kód formátum! (pl.: I10 vagy M54.5)" });
+            res.end();
+        }
+        else{
+            Adat_mentes(tabla, oszlopok, adatok, id, tabla[0], res);
+        }
+    }
+    else if(tabla == "Gyogyszerek"){
+        if(!Gyogyszer_nev_regex.test(adatok[0])){
+            
+            res.json({ statusz: "hiba", hiba: "Hibás gyógyszer név formátum! (Nagybetűvel kell kezdődni, legalább 2 karakter)" });
+            res.end();
+        }
+        else if(!Hatoanyag_regex.test(adatok[1])){
+            res.json({ statusz: "hiba", hiba: "Hibás hatóanyag formátum! (Nagybetűvel kell kezdődni, legalább 2 karakter)" });
+            res.end();
+        }
+        else if(!Mennyiseg_regex.test(adatok[2])){
+            res.json({ statusz: "hiba", hiba: "Hibás mennyiség formátum! (Pozitív szám, tizedesvesszővel is lehet)" });
+            res.end();
+        }
+        else{
+            Adat_mentes(tabla, oszlopok, adatok, id, tabla[0], res);
+        }
+    }
+    else if(tabla == "Operatorok"){
+        if(!Nev_regex.test(adatok[0])){
+            
+            res.json({ statusz: "hiba", hiba: "Hibás név formátum! (Tagoknak nagybetűvel kell kezdődni, köztük szóköz vagy '-' jel)" });
+            res.end();
+        }
+        else if(!email_regex.test(adatok[1])){
+            res.json({ statusz: "hiba", hiba: "Hibás e-mail formátum! (Helyes: pl.: valami@valami.valami, ékezetes nem megengedett)" });
+            res.end();
+        }
+        else if(!felhasznalonev_regex.test(adatok[2])){
+            res.json({ statusz: "hiba", hiba: "Hibás felhasználónév formátum! (Legalább 4 karakter, csak betűk)" });
+            res.end();
+        }
+        else if(!jelszo_regex.test(adatok[3])){
+            res.json({ statusz: "hiba", hiba: "Hibás jelszó formátum! (Legalább 4 karakter, csak betűk, számok '.' és '-')" });
+            res.end();
+        }
+        else{
+            Adat_mentes(tabla, oszlopok, adatok, id, tabla[0], res);
+        }
+    }
+    else if(tabla == "Paciensek"){
+        if(!Nev_regex.test(adatok[0])){
+            
+            res.json({ statusz: "hiba", hiba: "Hibás név formátum! (Tagoknak nagybetűvel kell kezdődni, köztük szóköz vagy '-' jel)" });
+            res.end();
+        }
+        else if(!Nev_regex.test(adatok[2])){
+            res.json({ statusz: "hiba", hiba: "Hibás születési név formátum! (Tagoknak nagybetűvel kell kezdődni, köztük szóköz vagy '-' jel)" });
+            res.end();
+        }
+        else if(!Nev_regex.test(adatok[3])){
+            res.json({ statusz: "hiba", hiba: "Hibás formátum az anyja név cellában! (Tagoknak nagybetűvel kell kezdődni, köztük szóköz vagy '-' jel)" });
+            res.end();
+        }
+        else if(!telepules_regex.test(adatok[4])){
+            res.json({ statusz: "hiba", hiba: "Hibás születés hely formátum! (Nagybetűvel kell kezdődni, legalább 2 karakter)" });
+            res.end();
+        }
+        else if(!datum_regex.test(adatok[5])){
+            res.json({ statusz: "hiba", hiba: `Hibás születési idő formátum! (Helyes: ${most})` });
+            res.end();
+        }
+        else if(!taj_regex.test(adatok[6])){
+            res.json({ statusz: "hiba", hiba: "Hibás TAJ szám formátum! (Kötelezően 9 szám pl.: 123456789 vagy 123 456 789)" });
+            res.end();
+        }
+        else if(!datum_regex.test(adatok[8])){
+            res.json({ statusz: "hiba", hiba: `Hibás ellátási idő formátum! (Helyes: ${most})` });
+            res.end();
+        }
+        else if(adatok[9] && adatok[9] !== "NULL" && !datum_regex.test(adatok[9])){
+            res.json({ statusz: "hiba", hiba: `Hibás távozási idő formátum! (Helyes: ${most})` });
+            res.end();
+        }
+        else if(!iranyitoszam_regex.test(adatok[10])){
+            res.json({ statusz: "hiba", hiba: "Hibás iranyítószám formátum! (Első nagyobb mint 0 és 4 számnak kell lennie pl.: 8992)" });
+            res.end();
+        }
+        else if(!telepules_regex.test(adatok[11])){
+            res.json({ statusz: "hiba", hiba: "Hibás születés hely formátum! (Nagybetűvel kell kezdődni, legalább 2 karakter)" });
+            res.end();
+        }
+        else if(!cim_regex.test(adatok[12])){
+            res.json({ statusz: "hiba", hiba: "Hibás cím formátum! (Nagybetűvel kell kezdődni, legalább 4 karakter)" });
+            res.end();
+        }
+        else if(!telefon_regex.test(adatok[13])){
+            res.json({ statusz: "hiba", hiba: "Hibás telefonszám formátum! (Magyar telefonszám pl.: 36 30 123 4567 vagy 06 1 123 4567)" });
+            res.end();
+        }
+        else if(!email_regex.test(adatok[14])){
+            res.json({ statusz: "hiba", hiba: "Hibás e-mail formátum! (Helyes: pl.: valami@valami.valami, ékezetes nem megengedett)" });
+            res.end();
+        }
+        else if(!nyugdij_regex.test(adatok[15])){
+            res.json({ statusz: "hiba", hiba: "Hibás nyugdíj formátum! (Nem kezdődhet nullával)" });
+            res.end();
+        }
+        else{
+            Adat_mentes(tabla, oszlopok, adatok, id, tabla[0], res);
+        }
+    }
+    else if(tabla == "Rokonok"){
+        if(!Nev_regex.test(adatok[0])){
+            
+            res.json({ statusz: "hiba", hiba: "Hibás formátum az anyja név cellában! (Tagoknak nagybetűvel kell kezdődni, köztük szóköz vagy '-' jel)" });
+            res.end();
+        }
+        else if(!email_regex.test(adatok[1])){
+            res.json({ statusz: "hiba", hiba: "Hibás e-mail formátum! (Helyes: pl.: valami@valami.valami, ékezetes nem megengedett)" });
+            res.end();
+        }
+        else if(!felhasznalonev_regex.test(adatok[2])){
+            res.json({ statusz: "hiba", hiba: "Hibás felhasználónév formátum! (Legalább 4 karakter, csak betűk)" });
+            res.end();
+        }
+        else if(!jelszo_regex.test(adatok[3])){
+            res.json({ statusz: "hiba", hiba: "Hibás jelszó formátum! (Legalább 4 karakter, csak betűk, számok '.' és '-')" });
+            res.end();
+        }
+        else if(!iranyitoszam_regex.test(adatok[4])){
+            res.json({ statusz: "hiba", hiba: "Hibás iranyítószám formátum! (Első nagyobb mint 0 és 4 számnak kell lennie pl.: 8992)" });
+            res.end();
+        }
+        else if(!telepules_regex.test(adatok[5])){
+            res.json({ statusz: "hiba", hiba: "Hibás születés hely formátum! (Nagybetűvel kell kezdődni, legalább 2 karakter)" });
+            res.end();
+        }
+        else if(!cim_regex.test(adatok[6])){
+            res.json({ statusz: "hiba", hiba: "Hibás cím formátum! (Nagybetűvel kell kezdődni, legalább 4 karakter)" });
+            res.end();
+        }
+        else if(!telefon_regex.test(adatok[7])){
+            res.json({ statusz: "hiba", hiba: "Hibás telefonszám formátum! (Magyar telefonszám pl.: 36 30 123 4567 vagy 06 1 123 4567)" });
+            res.end();
+        }
+        
+        else{
+            Adat_mentes(tabla, oszlopok, adatok, id, tabla[0], res);
+        }
     }
 });
 
+
+function Adat_mentes(tabla, oszlopok, adatok, id, main_id, res) {
+    if (id === "new") {
+        conn.query(`SHOW COLUMNS FROM ${tabla}`, (err, cols) => {
+        if (err) {
+        console.error(err);
+        return res.json({ statusz: "hiba", hiba: "Adatbázis hiba vagy ilyen már létezik!" });
+        }
+
+    // Az oszlopnevek a beszúráshoz
+    const columnNames = cols.map(c => c.Field);
+
+    const placeholders = [];
+    const queryParams = [];
+
+    oszlopok.forEach((col, index) => {
+        let rawValue = adatok[index];
+
+        if (rawValue === "" || rawValue === "NULL" || rawValue === undefined) {
+            rawValue = null; 
+        }
+
+        if (col.toUpperCase() === "PASSWORD" && (tabla === "Operatorok" || tabla === "Rokonok")) {
+            console.log(`DEBUG: MD5 kódolás alkalmazva az oszlopra: ${col}`);
+            // MD5 kódolás közvetlenül SQL-be
+            placeholders.push(`MD5(${conn.escape(rawValue)})`);
+        } else {
+            placeholders.push("?");
+            queryParams.push(rawValue);
+        }
+    });
+
+    const sql = `INSERT INTO ${tabla} (${oszlopok.join(", ")}) VALUES (${placeholders.join(", ")})`;
+
+    console.log("DEBUG Futtatandó SQL:", sql);
+
+    conn.query(sql, queryParams, (err, results) => {
+        valasz(res, err, results);
+    });
+});   
+    } 
+    else {
+    conn.query(`SHOW COLUMNS FROM ${tabla}`, (err, cols) => {
+        if (err) {
+            console.error(err);
+            return res.json({ statusz: "hiba", hiba: "Adatbázis hiba 806" });
+        }
+
+        // Az oszlopnevek a frissítéshez (UPDATE-nél "oszlop = ?" formátum kell)
+        const setClauses = [];
+        const queryParams = [];
+
+        oszlopok.forEach((col, index) => {
+            let rawValue = adatok[index];
+            if (rawValue === "" || rawValue === "NULL" || rawValue === undefined) {
+                rawValue = null; 
+            }
+            if (col.toUpperCase() === "PASSWORD" && (tabla === "Operatorok" || tabla === "Rokonok")) {
+                console.log(`DEBUG: MD5 kódolás alkalmazva az oszlopra: ${col}`);
+                setClauses.push(`${col} = MD5(${conn.escape(rawValue)})`);
+            } else {
+                setClauses.push(`${col} = ?`);
+                queryParams.push(rawValue);
+            }
+        });
+        console.log(oszlopok);
+        
+        const sql = `UPDATE ${tabla} SET ${setClauses.join(", ")} WHERE ${main_id}_ID = ?`;
+
+        queryParams.push(id);
+        console.log("DEBUG Futtatandó SQL:", sql);
+        console.log(queryParams);
+        conn.query(sql, queryParams, (err, results) => {
+            valasz(res, err, results);
+        });
+    });
+}
+}
 
 //adat törlése
 app.post('/adattorlese', (req, res) => {
@@ -591,17 +843,17 @@ app.post('/adattorlese', (req, res) => {
      conn.query(`SHOW COLUMNS FROM ${tabla}`, (err, cols) => {
             if (err) {
                 console.error(err);
-                return res.json({ hiba: "Adatbázis hiba" });
+                return res.json({ statusz: "hiba", hiba: "Adatbázis hiba" });
             }
             const firstCol = cols[0].Field;
             const sql = `DELETE FROM ${tabla} WHERE ${firstCol} = ?;`;
             conn.query(sql, [id], (err, cols) => {
             if (err) {
                 console.error(err);
-                return res.json({ hiba: "Adatbázis hiba" });
+                return res.json({ statusz: "hiba", hiba: "Adatbázis hiba" });
             }
             res.set('Content-Type', 'application/json', 'charset=utf-8');
-            res.send(JSON.stringify({ tablak: "siker" }));
+            res.send(JSON.stringify({ statusz: "siker" }));
             res.end();
     }
     );
@@ -609,19 +861,16 @@ app.post('/adattorlese', (req, res) => {
     
 });
 
-
 // Segédfüggvény a válaszhoz
 function valasz(res, err, results) {
     if (err) {
         console.error(err);
-        return res.json({ hiba: "Adatbázis hiba", error: err }); res.end();
+        return res.json({ statusz: "hiba", hiba: "Adatbázis hiba vagy ilyen már létezik!", error: err }); 
     }
     console.log("Sikeres művelet");
-    res.json({ tablak: "siker", error: "" });
+    res.json({ statusz: "siker", error: "", hiba: "" });
     res.end();
 }
-
-
 
 // Kiválasztott elemek mentése
 app.post('/saveHozzaadottAdat', (req, res) => { // BG
@@ -638,7 +887,6 @@ app.post('/saveHozzaadottAdat', (req, res) => { // BG
     const ids = idsString.split(',')
                          .map(id => parseInt(id.trim()))
                          .filter(id => !isNaN(id));
-    
     if (ids.length === 0) {
         return res.json({ success: false, error: 'Érvénytelen vagy üres ID lista.' }); res.end();
     }
@@ -656,7 +904,6 @@ app.post('/saveHozzaadottAdat', (req, res) => { // BG
 
         let sql = "";
         let values = [];
-
 
         switch (tabla) {
             case 'Betegsegek':
@@ -677,8 +924,6 @@ app.post('/saveHozzaadottAdat', (req, res) => { // BG
                 return;
         }
 
-
-        
         conn.query(sql, [values], (errInsert, results) => {
             if (errInsert) {
                 console.log("/saveHozzaadottAdat hiba (INSERT)");
@@ -692,11 +937,6 @@ app.post('/saveHozzaadottAdat', (req, res) => { // BG
         });
     });
 });
-
-
-
-
-
 
 //Törölhető (már hozzárendelt) elemek lekérdezése
 app.post('/getTorolniValo', (req, res) => {
@@ -715,8 +955,8 @@ app.post('/getTorolniValo', (req, res) => {
                    ORDER BY NEV`;
             break;
         case 'Gyogyszerek':
-            sql = `SELECT GY_ID, NEV FROM Gyogyszerek
-                   WHERE GY_ID IN (SELECT Gyogyszer_ID FROM Paciens_Gyogyszer WHERE PACIENS_ID = ?)
+            sql = `SELECT G_ID, NEV FROM Gyogyszerek
+                   WHERE G_ID IN (SELECT Gyogyszer_ID FROM Paciens_Gyogyszer WHERE PACIENS_ID = ?)
                    ORDER BY NEV`;
             break;
         case 'Rokonok':
@@ -763,7 +1003,6 @@ app.post('/deletePaciensAdat', (req, res) => {
     }
 
     let sql = "";
-    
 
     switch (tabla) {
         case 'Betegsegek':
@@ -779,7 +1018,6 @@ app.post('/deletePaciensAdat', (req, res) => {
             return res.json({ success: false, error: 'Érvénytelen tábla név!' });
     }
 
-
     conn.query(sql, [pacid, ids], (err, results) => {
         if (err) {
             console.log("/deletePaciensAdat hiba", err);
@@ -792,7 +1030,245 @@ app.post('/deletePaciensAdat', (req, res) => {
     });
 });
 
+app.post('/mertekMezok', (req, res) =>{
+    const sql = `SELECT Config.VALUE FROM Config WHERE Config.FIELD = "gyogyi"`
+    conn.query(sql, (err, results) =>{
+        if(err){
+            console.log("mertekMezok")
+            console.log(err)
+        }
+        else{
+            res.set('Content-Type', 'application/json', 'charset=utf-8');
+        res.send(JSON.stringify({ 'mezok': results}));
+        res.end();
+        }
+    })
+});
 
+app.post('/pacnev', (req, res) => {
+    const sql = `SELECT P_ID, NEV FROM Paciensek;`;
+    conn.query(sql, (err, results) => {
+        if(err){
+            console.log("pacnev");
+            console.log(err);
+        }
+       else{
+        res.set('Content-Type', 'application/json', 'charset=utf-8');
+        res.send(JSON.stringify({ 'tablak': results}));
+        res.end();
 
+       }
+    })
+});
+
+app.post('/pacnev2', (req, res) => {
+    const id = req.query.pac_id;
+    const sql = `SELECT NEV FROM Paciensek where P_ID like ${id};`;
+    conn.query(sql, (err, results) => {
+        if(err){
+            console.log("pacnev2");
+            console.log(err);
+        }
+       else{
+        res.set('Content-Type', 'application/json', 'charset=utf-8');
+        res.send(JSON.stringify({ 'tablak': results}));
+        res.end();
+
+       }
+    })
+});
+
+app.post('/opnev', (req, res) => {
+    const sql = `SELECT O_ID, NEV FROM Operatorok where;`;
+    conn.query(sql, (err, results) => {
+        if(err){
+            console.log("pacnev");
+            console.log(err);
+        }
+       else{
+        res.set('Content-Type', 'application/json', 'charset=utf-8');
+        res.send(JSON.stringify({ 'tablak': results}));
+        res.end();
+
+       }
+    })
+});
+
+app.post('/korlaplop', (req, res) => {
+    const id = req.query.pacid;
+    const sql = `SELECT * FROM Korlap where Paciens_ID like ?;`;
+    conn.query(sql,[id], (err, results) => {
+        if(err){
+            console.log("korlaplop");
+            console.log(err);
+        }
+        else{
+            res.set('Content-Type', 'application/json', 'charset=utf-8');
+            res.send(JSON.stringify({ 'tablak': results}));
+            res.end();
+        }
+    })
+});
+
+app.post(`/korlap_adatok`, (req, res) => {
+    const paciensId = req.query.pac_id;
+
+    const sql = `
+        SELECT 
+            p.NEV, 
+            p.SZUL_IDO, 
+            p.TAJ, 
+            p.NEM,
+            CONCAT(p.IRANYITOSZAM, ' ', p.TELEPULES, ', ', p.CIM) AS LAKCIM,
+            p.ELLAT_IDO,
+            p.ALLAPOT AS STATUSZ,
+            GROUP_CONCAT(DISTINCT b.NEV SEPARATOR ', ') AS BETEGSEGEK,
+            GROUP_CONCAT(DISTINCT g.NEV SEPARATOR ', ') AS Gyogyszerek,
+            o.JOGOSULTSAG as OP_NEV
+        FROM Paciensek AS p
+        LEFT JOIN Paciens_Betegseg AS pb ON p.P_ID = pb.PACIENS_ID
+        LEFT JOIN Betegsegek AS b ON pb.BETEGSEG_ID = b.B_ID
+        LEFT JOIN Paciens_Gyogyszer AS pgy ON p.P_ID = pgy.PACIENS_ID
+        LEFT JOIN Gyogyszerek AS g ON pgy.GYOGYSZER_ID = g.G_ID
+        LEFT JOIN Korlap as k on p.P_ID = k.Paciens_ID
+        LEFT JOIN Operatorok as o on k.Operator_ID = o.O_ID
+        where p.P_ID = ?
+    `;
+   
+    conn.query(sql, [paciensId], (err, results) => {
+    if(err){
+        console.log("korlapmod");
+        console.log(err);
+    }
+    
+    res.set('Content-Type', 'application/json', 'charset=utf-8');
+    res.send(JSON.stringify({ 'tablak': results}));
+    res.end();
+    })
+});
+
+app.post('/generate_pdf', async (req, res) => {
+    try {
+        const { PAC_ID, OP_ID, OP_NEV, be } = req.body;
+        const doc = new jsPDF();
+
+        // ===== DÁTUM =====
+        const most = new Date();
+        const datumResz = most.toISOString().split('T')[0];
+        const idoResz = most.toTimeString().split(' ')[0];
+        const idobelyeg = `${datumResz} ${idoResz}`;
+        const tisztaFajlnevIdo = idobelyeg.replaceAll(":", "-").replace(" ", "_");
+        const fajlNev = `korlap_${PAC_ID}_${tisztaFajlnevIdo}.pdf`;
+
+        // ===== FONT (ékezet miatt) =====
+        try {
+            const fontUrl = "https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.66/fonts/Roboto/Roboto-Regular.ttf";
+            const fontRes = await fetch(fontUrl);
+            const arrayBuffer = await fontRes.arrayBuffer();
+            const base64Font = Buffer.from(arrayBuffer).toString('base64');
+            doc.addFileToVFS("Roboto-Regular.ttf", base64Font);
+            doc.addFont("Roboto-Regular.ttf", "Roboto", "normal");
+            doc.setFont("Roboto");
+        } catch (e) {}
+
+        const pageWidth = 210;
+        const marginLeft = 20;
+        const maxWidth = pageWidth - (marginLeft * 2);
+        let y = 20;
+
+        // ===== SEGÉD =====
+        const sectionHeader = (text) => {
+            doc.setFillColor(220, 220, 220);
+            doc.rect(marginLeft, y - 6, maxWidth, 8, "F");
+            doc.setFontSize(12);
+            doc.text(text, marginLeft + 2, y);
+            y += 12;
+        };
+
+        const twoColLine = (label, value) => {
+            doc.setFontSize(11);
+            doc.text(`${label}:`, marginLeft, y);
+            doc.text(String(value ?? ""), marginLeft + 55, y);
+            y += 8;
+        };
+
+        // ===== FEJLÉC =====
+        doc.setFontSize(16);
+        doc.text("KÓRLAP", pageWidth / 2, y, { align: "center" });
+        y += 8;
+
+        doc.setFontSize(11);
+        doc.text("Zalaegerszegi Idősek Gondozó Háza", pageWidth / 2, y, { align: "center" });
+        y += 6;
+
+        doc.setFontSize(10);
+        doc.text(`Dokumentum azonosító: FK-${datumResz}-${PAC_ID}`, pageWidth / 2, y, { align: "center" });
+        y += 5;
+
+        doc.text(`Generálva: ${idobelyeg}`, pageWidth / 2, y, { align: "center" });
+        y += 15;
+
+        // ===== BETEG ADATAI =====
+        sectionHeader("Beteg adatai");
+        twoColLine("Név", be.NEV);
+        twoColLine("Születési dátum", be.SZUL_IDO);
+        twoColLine("TAJ", be.TAJ);
+        twoColLine("Nem", be.NEM);
+        twoColLine("Lakcím", be.LAKCIM);
+        y += 5;
+
+        // ===== FELVÉTEL =====
+        sectionHeader("Felvétel");
+        twoColLine("Felvétel ideje", be.ELLAT_IDO);
+
+        doc.text("Panasz:", marginLeft, y);
+        y += 7;
+
+        const panaszLines = doc.splitTextToSize(be.BETEGSEGEK || "", maxWidth);
+        doc.text(panaszLines, marginLeft, y);
+        y += (panaszLines.length * 6) + 5;
+
+        doc.text("Státusz:", marginLeft, y);
+        doc.text(be.STATUSZ || "", marginLeft + 55, y);
+        y += 10;
+
+        // ===== GYÓGYSZEREK =====
+        sectionHeader("Gyógyszerek");
+        doc.text("Gyógyszerek:", marginLeft, y);
+        y += 8;
+
+         const gyogyLines = doc.splitTextToSize(be.Gyogyszerek || "", maxWidth);
+        doc.text(gyogyLines, marginLeft, y);
+        y += (gyogyLines.length * 6) + 5;
+
+        // ===== KIÁLLÍTÓ =====
+        sectionHeader("Kiállító");
+        twoColLine("Kiállító neve", OP_NEV);
+
+        // ===== ALÁÍRÁS =====
+        const signatureY = 270;
+        doc.line(130, signatureY, 190, signatureY);
+        doc.text("Aláírás", 150, signatureY + 6);
+
+        // ===== MENTÉS =====
+        const outputDir = path.join(__dirname, 'public', 'korlap');
+        if (!fs.existsSync(outputDir)) fs.mkdirSync(outputDir, { recursive: true });
+
+        const filePath = path.join(outputDir, fajlNev);
+        fs.writeFileSync(filePath, Buffer.from(doc.output('arraybuffer')));
+
+        const dbPath = `korlap/${fajlNev}`;
+        const sql = `INSERT INTO Korlap (Paciens_ID, Operator_ID, LEIRAS) VALUES (?, ?, ?)`;
+
+        conn.query(sql, [PAC_ID, OP_ID, dbPath], (err) => {
+            if (err) return res.status(500).json({ success: false });
+            res.json({ success: true, path: dbPath });
+        });
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ success: false });
+    }
+});
 
 app.listen(port,() => {console.log("********************************juhééééé********************************")});
