@@ -6,7 +6,7 @@
 </div>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/release-v0.2.4-blue" alt="Release">
+  <img src="https://img.shields.io/badge/release-v0.2.8-blue" alt="Release">
 </p>
 
 ---
