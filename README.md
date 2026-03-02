@@ -22,4 +22,4 @@ Aktuális munkafolyamat: [Visual Studio Code](https://prod.liveshare.vsengsaas.v
 Hasznos tartalmak: [Példa specifikáció](https://awu.ac.in/docs/miscellaneous/2022/web_req_spec.pdf), [Példa kezelői kézikönyv](https://belsotudasbazis.szamvitelirendszer.hu/weboldal_doksi_1_0_0.pdf), [Tesztelési útmutató](https://www.tutorial.hu/weboldal-keszites/weboldal-tesztelesi-eljarasok-teljes-utmutato/)
 
 ### Alkalmazás feltelepítése
-Az alábbiakban egy részletes lépésről lépésre útmutatót olvashat, amely lehetővé teszi az alkalmazás feltelepítését és indítását egy teljesen üres számítógépen.
+Az alábbiakban egy részletes lépésről lépésre útmutatót olvashat, amely lehetővé teszi az alkalmazás feltelepítését és indítását egy teljesen üres számítógépen. A pontokat figyelmesen olvassa el és másolja le a hibátlan futtatás érdekében.
