@@ -24,11 +24,13 @@ Hasznos tartalmak: [Példa specifikáció](https://awu.ac.in/docs/miscellaneous/
 ## Alkalmazás feltelepítése
 Az alábbiakban egy részletes lépésről lépésre útmutatót olvashat, amely lehetővé teszi az alkalmazás feltelepítését és indítását egy teljesen üres számítógépen. A pontokat figyelmesen olvassa el és másolja le a hibátlan futtatás érdekében.
 
-1. Fájlok letöltése
-2. Mappába kicsomagolás
-3. HeidiSQL letöltése -> bejelentkezés -> adatbazis_feltoltes.sql / adatbazis_ures.sql lefuttatasa HeidiSQL-ben
-4. VSCODE letöltése -> MySQL kapcsolat átírása a java.js-ben
-5. Feltölteni a projektet a szerverre -> pl. WinSCP
-6. Putty letöltése -> bejelentkezés
-7. Szükséges modulok letöltése
-8. Indítás
+### Projekt letöltése
+1. A projektet a https://github.com/szigethyjozsef/SZ6A_Idoskoruak_Gondozohaza linken lehet elérni.
+2. Kattintson a jobb oldalon található 'Releases' címre.
+3. Kattintson a legfrissebb verzió címére, pl.: 'v0.2.9 - Beta'.
+4. Az 'Assets' cím alatt kattintson a 'Source code (zip)' gombra. Ezzel sikeresen letöltötte a projektet egy becsomagolt fájlba.
+5. A Windows eszközén nyissa meg a Fájlkezelőt, majd menjen a Letöltések mappába.
+6. Keresse meg az 'SZ6A_Idoskoruak_Gondozohaza-x.x.x' fájlt, amely '.zip' kiterjesztésű.
+7. Kattintson rá jobb gombbal, majd válassza ki az 'Az összes kibontása' opciót.
+8. A 'Tallózás...' gombra kattintva válasszon ki egy olyan mappát, ahol biztonságosan tárolható lesz a projekt, pl.: C:\Documents vagy Dokumentumok.
+9. Kattintson a 'Mappa választása' majd a 'Kibontás' gombra.
