@@ -32,5 +32,5 @@ Az alábbiakban egy részletes lépésről lépésre útmutatót olvashat, amely
 5. A Windows eszközén nyissa meg a Fájlkezelőt, majd menjen a Letöltések mappába.
 6. Keresse meg az 'SZ6A_Idoskoruak_Gondozohaza-x.x.x' fájlt, amely '.zip' kiterjesztésű.
 7. Kattintson rá jobb gombbal, majd válassza ki az 'Az összes kibontása' opciót.
-8. A 'Tallózás...' gombra kattintva válasszon ki egy olyan mappát, ahol biztonságosan tárolható lesz a projekt, pl.: C:\Documents vagy Dokumentumok.
-9. Kattintson a 'Mappa választása' majd a 'Kibontás' gombra.
+8. A 'Tallózás...' gombra kattintva válasszon ki egy olyan mappát, ahol biztonságosan tárolható lesz a projekt, pl.: C:\Documents.
+9. Kattintson a 'Mappaválasztás' majd a 'Kibontás' gombra.
