@@ -237,6 +237,7 @@ function infok(asd){
         html = `<p class="intro">Ezen a részen a korlapokat kezelheti.</p>
         <h5>🛠️ Kezelőfelület</h5>
         <ul>
+            <li>Az adott korlap megtekintéséhez kattintson a korlap kártyára.</li>
             <li>Első gombbal visszatud menni a pácienskártyához.</li>
             <li>Második gombbal új korlapot tud létrehozni az adott páciensnek.</li>
         </ul>
@@ -913,9 +914,6 @@ function pupUPletrehoz(cuccos) { // BA
 
 function adatModositas(gyogyszer, ertek, pacid){
     var be = ajax_post(`/adatmodositas?gyogyszer=${gyogyszer}&ertek=${ertek}&pacid=${pacid}`, 1);
-    var szoveg = `Módosította a ${jelenelegiTaj} tajszámú páciens ${gyogyszer} gyógyszerének adagolását.`;
-    ajax_post(`/naplo_mentes?user=${bejelentkezettUser}&muvelet=${encodeURIComponent(szoveg)}`, 1);
-    console.log(bejelentkezettUser + " Módosította a " + jelenelegiTaj + " tajszámú páciens " + gyogyszer + " gyógyszerének adagolását.");
 }
 
 function adathozzaad(allapot){
@@ -955,24 +953,6 @@ function adathozzaad(allapot){
             Something_very_bad_happened(be.statusz)
             $('#adatad').modal('hide');
             tablaMegcsinal( beb);
-            if(allapot != "new"){
-                if (tablaNevesKell === "Paciensek"){
-                    var szoveg = `Módosította a ${jelenelegiTaj} tajszámú páciens személyes adatait.`;
-                    ajax_post(`/naplo_mentes?user=${bejelentkezettUser}&muvelet=${encodeURIComponent(szoveg)}`, 1);
-                    console.log(bejelentkezettUser + " Módosította a " + jelenelegiTaj + " tajszámú páciens személyes adatait.");
-                } 
-
-                else{
-                    var szoveg = `Módosította a(z) ${allapot} azonosítójú adatot a(z) ${tablaNevesKell} táblában.`;
-                    ajax_post(`/naplo_mentes?user=${bejelentkezettUser}&muvelet=${encodeURIComponent(szoveg)}`, 1);
-                    console.log(bejelentkezettUser + " Módosította a(z) " + allapot + " azonosítójú adatot a(z) " + tablaNevesKell + " táblában.");
-                } 
-            }
-            else{
-                var szoveg = `Új adatot hozott létre a(z) ${tablaNevesKell} táblában.`;
-                ajax_post(`/naplo_mentes?user=${bejelentkezettUser}&muvelet=${encodeURIComponent(szoveg)}`, 1);
-                console.log(bejelentkezettUser + " Új adatokat hozott létre a(z) " + tablaNevesKell + " táblában.");
-            }
         } 
 }
 
@@ -984,9 +964,6 @@ function adat_torlese(id){
         Something_very_bad_happened(be.statusz);
         $('#adatad').modal('hide');
         tablaMegcsinal( beb);
-        var szoveg = `Törölt egy adatot a(z) ${tablaNevesKell} táblából.`;
-        ajax_post(`/naplo_mentes?user=${bejelentkezettUser}&muvelet=${encodeURIComponent(szoveg)}`, 1);
-        console.log(bejelentkezettUser + " Törölt egy adatot a(z) " + tablaNevesKell + " táblából.");
     }
 }
 
@@ -1108,11 +1085,6 @@ function P_adat_torlese_vegrahajt(tableNeve, pacid) {
         if (be.success) {
            $('#adatad').modal('hide');
             pacMod(pacid, jelenelegiTaj);
-            var szoveg = "Törölt egy adatot a(z) " + jelenelegiTaj + " tajszámú páciens " + tableNeve + " adataiból.";
-
-            ajax_post(`/naplo_mentes?user=${bejelentkezettUser}&muvelet=${encodeURIComponent(szoveg)}`, 1);
-
-            console.log(bejelentkezettUser + " Törölt egy adatot a(z) " + jelenelegiTaj + " tajszámú páciens " + tableNeve + " adataiból.");
 
         } else {
             errorDiv.className = "mx-auto my-3 text-danger";
@@ -1166,13 +1138,6 @@ function P_adat_mentes_dual(tableNeve, pacid) {
         if (be.success) {
             $('#adatad').modal('hide');
             pacMod(pacid, jelenelegiTaj);
-
-            var szoveg = "Hozzáadott egy adatot a(z) " + jelenelegiTaj + " tajszámú páciens " + tableNeve + " adataihoz.";
-
-            ajax_post(`/naplo_mentes?user=${bejelentkezettUser}&muvelet=${encodeURIComponent(szoveg)}`, 1);
-
-            console.log(bejelentkezettUser + " Hozzáadott egy adatot a(z) " + jelenelegiTaj + " tajszámú páciens " + tableNeve + " adataihoz.");
-
         } else {
             errorDiv.className = "mx-auto my-3 text-danger";
             errorDiv.textContent = be.error || "Ismeretlen hiba történt a mentés során.";
@@ -1284,12 +1249,6 @@ async function uj_korlap(PAC_ID, OP_ID, OP_NEV) {
     if (result.success) {
         alert(`PDF mentve a szerveren: ${result.path}`);
         Korlap_Open(PAC_ID);
-
-        var szoveg = "Létrehozott egy új kórlapot a " + jelenelegiTaj + " tajszámú páciensnek.";
-
-        ajax_post(`/naplo_mentes?user=${bejelentkezettUser}&muvelet=${encodeURIComponent(szoveg)}`, 1);
-
-        console.log(bejelentkezettUser + " Létrehozott egy új kórlapot a " + jelenelegiTaj + " tajszámú páciensnek.");
     } 
     else {
         alert("Hiba történt a PDF generálás közben!");
@@ -1398,9 +1357,9 @@ function vizsgalat(elem, leiras){
         }
     }
     
-    if (leiras === "Nyugdíjas" && parseInt(elem.value) < 0){
+    if ((leiras === "Nyugdíjas" || leiras === "Mennyiség") && parseInt(elem.value) < 0){
         elem.value = 0;
-        Something_very_bad_happened("A nyugdíj nem lehet kisebb mint nulla!");
+        Something_very_bad_happened(`A ${leiras} mező nem lehet kisebb mint nulla!`);
     }
 
     else return;

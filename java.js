@@ -16,10 +16,10 @@ const port = 9061;
 
 // MySQL kapcsolat
 const conn = mysql.createPool({
-    host: "10.2.0.11", //local: 10.2.0.11 ||||  193.227.198.214
+    host: "193.227.198.214", //local: 10.2.0.11 ||||  193.227.198.214
     user: "barabas.gergo",          
     password: "Csany4181",   
-    port: "3306", //local port: 3306 ||||  9406
+    port: "9406", //local port: 3306 ||||  9406
     database: "2021SZ_barabas_gergo",
     multipleStatements: true,
     dateStrings: true
@@ -133,6 +133,7 @@ app.post('/login', (req, res) => {
                 req.session.adminToken = newToken;
             }
             res.json({ 'db': jogosultsag, 'van': 1 });
+            naplo_mentes(user, sql, [user, passwd, user, passwd]);
         } else {
             res.json({ 'db': "nincs", 'van': 0 });
         }
@@ -283,8 +284,9 @@ app.post('/opadatok', (req, res) =>{
       }
       res.set('Content-Type', 'application/json; charset=utf-8');
       if (results && results.length > 0) {
-        res.send(JSON.stringify({ tablak: results }));
+            res.send(JSON.stringify({ tablak: results }));
 		      console.log(results);
+              
       } 
       else {
         res.send(JSON.stringify({ tablak: ['üres'] }));
@@ -297,7 +299,7 @@ app.post('/opadatok', (req, res) =>{
     const tab = req.query.tabla;
     let sql = `SELECT Naplo.OP_NEV, Naplo.SQLX, Naplo.DATUMIDO
             FROM Naplo
-            ORDER BY 3;`; 
+            ORDER BY 3 desc;`; 
     conn.query(sql, (err, results) => {
       if (err) {
 		console.log("naplolop");	
@@ -315,9 +317,51 @@ app.post('/opadatok', (req, res) =>{
     });
   });
   
+
+function naplo_mentes(user, sql, ertekek) {
+    let i = 0;
+    let adatok = Array.isArray(ertekek) ? ertekek : [ertekek];
+
+    
+    
+    const finalSql = sql.replace(/\?/g, () => {
+        // Ellenőrizzük, van-e még elem a tömbben
+        if (i >= adatok.length) {
+            return '<<HIÁNYZÓ ÉRTÉK>>';
+        }
+        
+        let ertek = adatok[i++]; // Vesszővel elválasztva adjuk át az értékeket, így minden '?'-hoz a megfelelő érték kerül
+        console.log("Adatok tömbje: " + ertek);
+        if (ertek === null || typeof ertek === 'undefined') {
+            return 'NULL';
+        }
+
+        if (typeof ertek === 'number' || typeof ertek === 'boolean' || typeof ertek === 'bigint') {
+            return ertek.toString();
+        }
+
+        // JAVÍTÁS: Escape-elés és rendes behelyettesítés backtick-kel
+        let tisztitott = ertek.toString().replace(/'/g, "''");
+        return `'${tisztitott}'`; // <-- Itt backtick kell!
+    });
+    console.log("Final SQL a naplóhoz: " + finalSql);
+    const sqll = `INSERT INTO Naplo (OP_NEV, SQLX) VALUES (?, ?)`;
+
+    conn.query(sqll, [user, finalSql], (err, result) => {
+        if (err) {
+            console.log("Hiba a naplózásnál:", err);
+        } else {
+            console.log("Naplózás sikeres!");
+        }
+    });
+}
+
+
+
+/*
 app.post('/naplo_mentes', (req, res) => {
-    const user = req.query.user;
-    const muvelet = req.query.muvelet;
+    const user = user;
+    const muvelet = sql;
 
     const sql = `INSERT INTO Naplo (OP_NEV, SQLX) VALUES (?, ?)`;
 
@@ -330,7 +374,7 @@ app.post('/naplo_mentes', (req, res) => {
     });
 });
 
-
+*/
                                 
 //-----------Keresés--------------
 app.post('/kereses', (req, res) => {
@@ -345,11 +389,11 @@ app.post('/kereses', (req, res) => {
     if (tab === "Naplo") {
         const sql = `
             SELECT OP_NEV, SQLX, DATUMIDO AS Mikor
-        FROM Naplo
-        WHERE CAST(OP_NEV AS CHAR) LIKE ? 
-           OR CAST(SQLX AS CHAR) LIKE ? 
-           OR CAST(DATUMIDO AS CHAR) LIKE ?
-        ORDER BY DATUMIDO ASC;`;
+            FROM Naplo
+            WHERE CAST(OP_NEV AS CHAR) LIKE ? 
+               OR CAST(SQLX AS CHAR) LIKE ? 
+               OR CAST(DATUMIDO AS CHAR) LIKE ?
+            ORDER BY DATUMIDO desc;`;
 
         const values = [keresettSzoveg, keresettSzoveg, keresettSzoveg];
 
@@ -359,22 +403,43 @@ app.post('/kereses', (req, res) => {
         });
 
     } else {
-        conn.query('SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = ?', [tab], (err, columns) => {
-            if (err || !columns.length) return res.status(500).json({ error: 'Oszlop hiba!' });
+        // 1. Megnézzük, hogy a bejelentkezett user rokon-e
+    conn.query('SELECT R_ID FROM Rokonok WHERE FELHASZNALONEV = ?', [req.session.user], (errRokon, rokonResult) => {
+        const isRokon = rokonResult.length > 0;
+
+        // 2. Oszlopok lekérése a dinamikus kereséshez
+        conn.query('SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = ?', [tab], (errCol, columns) => {
+            if (errCol || !columns.length) return res.status(500).json({ error: 'Oszlop hiba!' });
 
             const likeConditions = columns
                 .map(col => `CAST(\`${tab}\`.\`${col.COLUMN_NAME}\` AS CHAR) LIKE ?`)
                 .join(' OR ');
-            
-            const likeValues = columns.map(() => keresettSzoveg);
-            const sql = `SELECT * FROM \`${tab}\` WHERE ${likeConditions}`;
 
-            conn.query(sql, likeValues, (err2, results) => {
+            let sql = "";
+            let queryParams = [];
+
+            // 3. LOGIKA VÁLASZTÁSA: Csak akkor szűrünk, ha a tábla 'Paciensek' ÉS a user egy rokon
+            if (tab === "Paciensek" && isRokon) {
+                sql = `
+                    SELECT \`${tab}\`.* FROM \`${tab}\`
+                    INNER JOIN Paciens_Rokon ON \`${tab}\`.P_ID = Paciens_Rokon.PACIENS_ID
+                    INNER JOIN Rokonok ON Paciens_Rokon.ROKON_ID = Rokonok.R_ID
+                    WHERE Rokonok.FELHASZNALONEV = ? 
+                    AND (${likeConditions})`;
+                
+                queryParams = [req.session.user, ...columns.map(() => keresettSzoveg)];
+            } else {
+                // Admin, Ápoló, vagy nem páciens tábla: mindent lát
+                sql = `SELECT * FROM \`${tab}\` WHERE ${likeConditions}`;
+                queryParams = columns.map(() => keresettSzoveg);
+            }
+
+            conn.query(sql, queryParams, (err2, results) => {
                 if (err2) return res.status(500).json({ error: 'Adatbázis hiba!' });
                 res.json({ tablak: results.length ? results : ['üres'] });
             });
         });
-    }
+    })};
 });
 
 
@@ -473,6 +538,7 @@ app.post('/adatmodositas', (req, res) => {
             console.log(err);
             return res.status(500).send(err);
         } 
+        naplo_mentes(req.session.user, sql, [ertek, pacid, gyogyNev]);
         res.json({ 'success': true, 'affectedRows': results.affectedRows });
     });
 });
@@ -610,7 +676,8 @@ app.post('/adatmentes', (req, res) => {
             res.end();
         }
         else{
-            Adat_mentes(tabla, oszlopok, adatok, id, tabla[0], res);
+            Adat_mentes(tabla, oszlopok, adatok, id, tabla[0], res, req);
+            
         }
     }
     else if(tabla == "Gyogyszerek"){
@@ -628,7 +695,7 @@ app.post('/adatmentes', (req, res) => {
             res.end();
         }
         else{
-            Adat_mentes(tabla, oszlopok, adatok, id, tabla[0], res);
+            Adat_mentes(tabla, oszlopok, adatok, id, tabla[0], res, req);
         }
     }
     else if(tabla == "Operatorok"){
@@ -650,7 +717,7 @@ app.post('/adatmentes', (req, res) => {
             res.end();
         }
         else{
-            Adat_mentes(tabla, oszlopok, adatok, id, tabla[0], res);
+            Adat_mentes(tabla, oszlopok, adatok, id, tabla[0], res,req);
         }
     }
     else if(tabla == "Paciensek"){
@@ -712,7 +779,7 @@ app.post('/adatmentes', (req, res) => {
             res.end();
         }
         else{
-            Adat_mentes(tabla, oszlopok, adatok, id, tabla[0], res);
+            Adat_mentes(tabla, oszlopok, adatok, id, tabla[0], res, req);
         }
     }
     else if(tabla == "Rokonok"){
@@ -751,13 +818,13 @@ app.post('/adatmentes', (req, res) => {
         }
         
         else{
-            Adat_mentes(tabla, oszlopok, adatok, id, tabla[0], res);
+            Adat_mentes(tabla, oszlopok, adatok, id, tabla[0], res, req);
         }
     }
 });
 
 
-function Adat_mentes(tabla, oszlopok, adatok, id, main_id, res) {
+function Adat_mentes(tabla, oszlopok, adatok, id, main_id, res, req) {
     if (id === "new") {
         conn.query(`SHOW COLUMNS FROM ${tabla}`, (err, cols) => {
         if (err) {
@@ -793,7 +860,7 @@ function Adat_mentes(tabla, oszlopok, adatok, id, main_id, res) {
     console.log("DEBUG Futtatandó SQL:", sql);
 
     conn.query(sql, queryParams, (err, results) => {
-        valasz(res, err, results);
+        valasz(res, err, results, sql,req, queryParams);
     });
 });   
     } 
@@ -829,7 +896,7 @@ function Adat_mentes(tabla, oszlopok, adatok, id, main_id, res) {
         console.log("DEBUG Futtatandó SQL:", sql);
         console.log(queryParams);
         conn.query(sql, queryParams, (err, results) => {
-            valasz(res, err, results);
+            valasz(res, err, results, sql, req, queryParams);
         });
     });
 }
@@ -852,21 +919,24 @@ app.post('/adattorlese', (req, res) => {
                 console.error(err);
                 return res.json({ statusz: "hiba", hiba: "Adatbázis hiba" });
             }
+            naplo_mentes(req.session.user, sql, [id]);
             res.set('Content-Type', 'application/json', 'charset=utf-8');
             res.send(JSON.stringify({ statusz: "siker" }));
             res.end();
-    }
-    );
-        });
+            
+            }
+        );
+    });
     
 });
 
 // Segédfüggvény a válaszhoz
-function valasz(res, err, results) {
+function valasz(res, err, results, sql, req, datok) {
     if (err) {
         console.error(err);
         return res.json({ statusz: "hiba", hiba: "Adatbázis hiba vagy ilyen már létezik!", error: err }); 
     }
+    naplo_mentes(req.session.user, sql, datok);
     console.log("Sikeres művelet");
     res.json({ statusz: "siker", error: "", hiba: "" });
     res.end();
@@ -930,6 +1000,7 @@ app.post('/saveHozzaadottAdat', (req, res) => { // BG
                 console.log(errInsert); 
                 res.json({ success: false, error: 'Adatbázis hiba mentéskor.', details: errInsert.sqlMessage });
             } else {
+                naplo_mentes(req.session.user, sql, [values]);
                 res.set('Content-Type', 'application/json', 'charset=utf-8');
                 res.send(JSON.stringify({ success: true, 'affectedRows': results.affectedRows, error : "null" }));
                 res.end();
@@ -1023,6 +1094,7 @@ app.post('/deletePaciensAdat', (req, res) => {
             console.log("/deletePaciensAdat hiba", err);
             res.json({ success: false, error: 'Adatbázis hiba törléskor.' });
         } else {
+            naplo_mentes(req.session.user, sql, [pacid, ids]);
             res.set('Content-Type', 'application/json', 'charset=utf-8');
             res.send(JSON.stringify({ success: true, 'affectedRows': results.affectedRows }));
             res.end();
@@ -1262,6 +1334,7 @@ app.post('/generate_pdf', async (req, res) => {
 
         conn.query(sql, [PAC_ID, OP_ID, dbPath], (err) => {
             if (err) return res.status(500).json({ success: false });
+            naplo_mentes(req.session.user, sql, [PAC_ID, OP_ID, dbPath]);
             res.json({ success: true, path: dbPath });
         });
 
