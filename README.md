@@ -96,3 +96,7 @@ Az alábbiakban egy részletes lépésről lépésre útmutatót olvashat, amely
 6. Írja be a 'cd PROJEKT_MAPPA' parancsot.
 7. A './start.sh' paranccsal eltudja indítani a szervert.
 8. A './stop.sh' paranccsal letudja állítani a szervert.
+
+### Alkalmazás használata
+1. A Front-End nyitóoldal az index.html fájl.
+2. A weboldalon helyzetérzékeny súgó érhető el.
