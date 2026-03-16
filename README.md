@@ -27,6 +27,31 @@ A weboldalon alapértelmezetten van egy beégetett Admin felhasználó, melynek 
 - Felhasználónév: admin
 - Jelszó: admin
 
+### HeidiSQL belépési adatok
+- Hostnév / IP: 193.227.198.214
+- Felhasználó: barabas.gergo
+- Jelszó: Csany4181
+- Port: 9406
+
+### VS Code MySQL kapcsolat
+- host: 10.2.0.11
+- user: barabas.gergo
+- password: Csany4181
+- port: 3306
+- database: ADATBAZIS_NEVE
+
+### WinSCP belépési adatok
+- Kiszolgáló neve: sexard3-214.tolna.net
+- Port száma: 422
+- Felhasználónév: barabas.gergo@csany-zeg.local
+- Jelszó: Csany4181
+
+### Putty belépési adatok
+- Host name: sexard3-214.tolna.net
+- Port: 422
+- login as: barabas.gergo@csany-zeg.local
+- password: Csany4181
+
 ## Alkalmazás feltelepítése
 Az alábbiakban egy részletes lépésről lépésre útmutatót olvashat, amely lehetővé teszi az alkalmazás feltelepítését és indítását egy teljesen üres számítógépen. A pontokat figyelmesen olvassa el és másolja le a hibátlan futtatás érdekében.
 
