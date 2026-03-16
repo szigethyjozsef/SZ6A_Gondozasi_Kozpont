@@ -22,6 +22,7 @@ Aktuális munkafolyamat: [Visual Studio Code](https://prod.liveshare.vsengsaas.v
 Hasznos tartalmak: [Példa specifikáció](https://awu.ac.in/docs/miscellaneous/2022/web_req_spec.pdf), [Példa kezelői kézikönyv](https://belsotudasbazis.szamvitelirendszer.hu/weboldal_doksi_1_0_0.pdf), [Tesztelési útmutató](https://www.tutorial.hu/weboldal-keszites/weboldal-tesztelesi-eljarasok-teljes-utmutato/)
 
 ## Belépési adatok
+Minden alábbi adat kizárólag a fejlesztés alatt voltak használva és a gyakorlati használathoz ezeket ajánlott átírnia egy hozzáértő programozonak.
 ### Weboldal belépési adatok
 A weboldalon alapértelmezetten van egy beégetett Admin felhasználó, melynek belépési adatai:
 - Felhasználónév: admin
