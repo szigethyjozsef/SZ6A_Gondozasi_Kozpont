@@ -38,3 +38,31 @@ Az alábbiakban egy részletes lépésről lépésre útmutatót olvashat, amely
 ### Adatbázis létrehozása és feltöltése
 1. Böngészőjében nyissa meg a https://www.heidisql.com/download.php linket.
 2. Válassza ki a 'Windows 64 bit Installer' gombot, majd ez letölt egy 'HeidiSQL_x.x.x.x_Setup.exe' fájlt.
+3. Kövesse a telepítő utasításait és töltse le a HeidiSQL programot.
+4. Nyissa meg a programot és töltse ki a mezőket a szervernek megfelelően: Gazdagép neve, Felhasználó, Jelszó, Port.
+5. Kattintson a 'Megnyitás' gombra, majd fent a menüben kattintson a 'Fájl' menügömbra.
+6. Válassza az 'SQL fájl futtatása' gombot és válassza ki a projekt mappából az 'Adatbazis_Ures' vagy 'Adatbazis_Teli' fájlt.
+
+### VS Code letöltése és a program beállítása
+1. Böngészőjében nyissa meg a https://code.visualstudio.com/download linket.
+2. Kattintson a Windows gombra majd a letöltött telepítőt használva telepítse a programot.
+3. Az 'Explorer' fülön belül kattintson az 'Open folder' gombra és válassza ki azt a mappábat, amelyikbe korábban kicsomagolta a projektet.
+4. Az oldalsó sávban válassza ki a 'java.js' fájlt.
+5. A kódban a 'MySQL kapcsolat' alatt lévő adatokat a HeidiSQL-ben megadottak alapján írja át, de a 'database' sort ne bántsa.
+6. CTRL + Ö gombkombinációval nyissa meg a terminált, majd írja be az 'npm install' parancsot és futtassa le.
+
+### Projekt felöltése a szerverre
+1. Böngészőjében nyissa meg a https://winscp.net/eng/download.php linket.
+2. Kattintson a 'Download WinSCP x.x.x' gombra majd kövesse a telepítő utasításait.
+3. Nyissa meg a programot és jelentkezzen be a kiszolgáló szerverre.
+4. Keresse meg a projekt mappáját és húzza be a jobb oldali sávba.
+
+### Szerver indítása
+1. Böngészőjében nyissa meg a https://putty.org/index.html linket.
+2. Kattintson a 'Download Putty' gombra és a telepítő lépéseit követve töltse le a programot.
+3. Jelentkezzen be a szerver adatainak megfelelően és kattinson az 'Open' gombra.
+4. A 'login as:' mezőbe írja be a 'barabas.gergo@csany-zeg.local' szöveget.
+5. A 'password:' mezőbe írja be a 'Csany4181' szöveget.
+6. Írja be a 'cd PROJEKT_MAPPA' parancsot.
+7. A './start.sh' paranccsal eltudja indítani a szervert.
+8. A './stop.sh' paranccsal letudja állítani a szervert.
